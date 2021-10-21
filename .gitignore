@@ -1,0 +1,22 @@
+# Ignore JetBrain IDE files
+**/idea/
+**/.idea/
+
+# Jupyter
+.ipynb_checkpoints
+*/.ipynb_checkpoints/*
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# IPython
+profile_default/
+ipython_config.py
+
+# Tutorials to learn stuff, locally
+**/*tutorial*
