@@ -32,7 +32,7 @@ def isDate(string: str) -> bool:
     Boolean indicator for "is string a date?".
     """
     try:
-        parseDate(string, fuzzy=False)
+        parseDate(string, fuzzy=False, ignoretz=True)
         return True
     except Exception as exe:
         if not isinstance(exe, ValueError):
