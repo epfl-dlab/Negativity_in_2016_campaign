@@ -107,15 +107,13 @@ def getQuotesFromSpeakers(df: DataFrame, speakers: DataFrame) -> DataFrame:
     To achieve this, first
     """
     df = df.select('*', f.explode('qids').alias('qid')).drop('qids')
-    return df.join(speakers.select('qid'), on='qid', how='left anti')
+    return df.join(speakers.select('qid'), on='qid', how='left_anti')
 
 
 def main():
     args = parser.parse_args()
     spark = SparkSession.builder.getOrCreate()
     spark.sparkContext.setLogLevel('WARN')
-
-    print(sys.path)
 
     t = time.time()
     political_occupations = json.load(open(args.occupations, 'r'))

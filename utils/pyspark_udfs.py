@@ -36,8 +36,11 @@ def isDate(string: str) -> bool:
         return True
     except Exception as exe:
         if not isinstance(exe, ValueError):
-            print('Caught unexpected Error', exe)
-            print(exe)
+            if isinstance(exe, TypeError):
+                pass  # Internal error of dateparser when handling the Value Error. So a type error is most likely actually a value error
+            else:
+                print('Caught unexpected Error', exe)
+                print(exe)
         return False
 
 
