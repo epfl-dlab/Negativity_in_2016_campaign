@@ -9,9 +9,8 @@ import sys
 import time
 from typing import List
 
-sys.path.append(str(Path(__file__).parent.parent))
-print(sys.path)
-import utils.pyspark_udfs as udf_util
+sys.path.append(str(Path(__file__).parent.parent))  # Only works when keeping the original repo structure
+import utils.pyspark_udfs as udf_util  # Has to be importet like that or PySpark has problems with custom udf's
 
 
 parser = ArgumentParser()
@@ -77,8 +76,10 @@ def sanitize(df: DataFrame) -> DataFrame:
 
 
 def getPoliticians(df: DataFrame, jobIDs: List[str], save_as: str = None) -> DataFrame:
+    """Filters all US politicians from a speaker dataframe. Also keeps males and females only."""
     parties = [DEMOCRATIC_PARTY, REPUBLICAN_PARTY]
     genders = [FEMALE, MALE]
+    df = df.withColumnRenamed('id', 'qid')
     all_columns = df.columns
     for exploding_column in ('gender', 'occupation', 'party'):
         del all_columns[all_columns.index(exploding_column)]
@@ -92,7 +93,7 @@ def getPoliticians(df: DataFrame, jobIDs: List[str], save_as: str = None) -> Dat
         .agg(f.collect_set('party').alias('parties'),
              f.collect_set('gender').alias('genders'),
              f.collect_set('US_congress_bio_ID').alias('CIDs'),
-             f.first('label').alias('name')) # TODO: is this label?
+             f.first('label').alias('name'))
 
     if save_as is not None:
         df.write.mode('overwrite').parquet(save_as)
@@ -124,7 +125,7 @@ def main():
 
     df = preprocess(df)
     initial_count = df.count()
-    df = sanitize(df)
+    df = sanitize(df).cache()
     sanitized_count = df.count()
     t1 = time.time()
     print(f'Time for preprocessing and sanitizing: {t1-t:.2f}s.')
