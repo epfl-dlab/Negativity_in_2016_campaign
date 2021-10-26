@@ -1,3 +1,4 @@
+import calendar
 from dateutil.parser import parse as parseDate
 import pyspark
 from pyspark.sql import DataFrame
@@ -33,7 +34,10 @@ def isDate(string: str) -> bool:
     try:
         parseDate(string, fuzzy=False)
         return True
-    except ValueError:
+    except Exception as exe:
+        if not isinstance(exe, ValueError):
+            print('Caught unexpected Error', exe)
+            print(exe)
         return False
 
 
