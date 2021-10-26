@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 from datetime import date
 import json
+from pathlib import Path
 from pyspark.ml.feature import CountVectorizer
 from pyspark.sql import DataFrame, SparkSession
 import pyspark.sql.functions as f
@@ -8,7 +9,9 @@ import sys
 import time
 from typing import List
 
-from utils import pyspark_udfs as udf_util
+sys.path.append(str(Path(__file__).parent.parent.joinpath('utils')))
+print(sys.path)
+import pyspark_udfs as udf_util
 
 
 parser = ArgumentParser()
@@ -110,6 +113,8 @@ def main():
     args = parser.parse_args()
     spark = SparkSession.builder.getOrCreate()
     spark.sparkContext.setLogLevel('WARN')
+
+    print(sys.path)
 
     t = time.time()
     political_occupations = json.load(open(args.occupations, 'r'))
