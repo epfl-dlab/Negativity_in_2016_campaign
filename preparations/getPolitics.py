@@ -9,9 +9,9 @@ import sys
 import time
 from typing import List
 
-sys.path.append(str(Path(__file__).parent.parent.joinpath('utils')))
+sys.path.append(str(Path(__file__).parent.parent))
 print(sys.path)
-import pyspark_udfs as udf_util
+import utils.pyspark_udfs as udf_util
 
 
 parser = ArgumentParser()
