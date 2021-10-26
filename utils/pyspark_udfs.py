@@ -9,12 +9,12 @@ from typing import List, Tuple, Union
 
 
 @udf(FloatType())
-def arrayMax(arr: ArrayType(FloatType)) -> Union[float, int]:
+def arrayMax(arr: ArrayType(FloatType())) -> Union[float, int]:
     return float(max(arr.values))
 
 
 @udf(IntegerType())
-def arraySize(arr: ArrayType(FloatType)) -> int:
+def arraySize(arr: ArrayType(FloatType())) -> int:
     return len(arr)
 
 
