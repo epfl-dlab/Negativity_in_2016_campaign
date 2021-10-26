@@ -6,6 +6,7 @@ from pyspark.sql import DataFrame, SparkSession
 import pyspark.sql.functions as f
 import sys
 import time
+from typing import List
 
 from utils import pyspark_udfs as udf_util
 
@@ -15,7 +16,14 @@ parser.add_argument('--quotations', help='Link to Quotebank in quotation centric
 parser.add_argument('--occupations', help='JSON file, mapping Wikidata QIDs to (political) occupations', required=True)
 parser.add_argument('--speaker', help='A Wikidata Dump containing speaker attributes - stored as parquet.', required=True)
 parser.add_argument('--save', help='Save political data here.', required=True)
+parser.add_argument('--save_politicians', help='If given, will store a dataframe containing all politicians.')
 parser.add_argument('--log', help='Path to a logfile', required=False)
+
+
+DEMOCRATIC_PARTY = 'Q29552'
+FEMALE = 'Q6581072'
+MALE = 'Q6581097'
+REPUBLICAN_PARTY = 'Q29468'
 
 
 def _trimDuplicates(df: DataFrame, useArraySizeForOccurrences: bool = False) -> DataFrame:
@@ -49,10 +57,8 @@ def _trimDuplicates(df: DataFrame, useArraySizeForOccurrences: bool = False) -> 
 def preprocess(df: DataFrame) -> DataFrame:
     """
     Trims down URLs to root domains.
-    Adds a 'year' and a 'month' column for convenience.
     """
     df = df.withColumn('domains', udf_util.URLs2domain(f.col('urls')))
-    # TODO: Year and Month
     return df
 
 
@@ -63,7 +69,32 @@ def sanitize(df: DataFrame) -> DataFrame:
     - Duplicates (Mostly from sited that are queried over and over again)
     """
     no_dates = df.filter(~udf_util.isDate(f.col('quotation')))
-    no_duplicates = _trimDuplicates(df)
+    no_duplicates = _trimDuplicates(no_dates)
+    return no_duplicates
+
+
+def getPoliticians(df: DataFrame, jobIDs: List[str], save_as: str = None) -> DataFrame:
+    parties = [DEMOCRATIC_PARTY, REPUBLICAN_PARTY]
+    genders = [FEMALE, MALE]
+    all_columns = df.columns
+    for exploding_column in ('gender', 'occupation', 'party'):
+        del all_columns[all_columns.index(exploding_column)]
+
+    df = df \
+        .select(*all_columns, 'party', 'occupation', f.explode('gender').alias('gender')) \
+        .select(*all_columns, 'gender', 'occupation', f.explode('party').alias('party')) \
+        .select(*all_columns, 'party', 'gender', f.explode('occupation').alias('occupation')) \
+        .filter(f.col('party').isin(parties) & f.col('gender').isin(genders) & f.col('occupation').isin(jobIDs)) \
+        .groupby('qid') \
+        .agg(f.collect_set('party').alias('parties'),
+             f.collect_set('gender').alias('genders'),
+             f.collect_set('US_congress_bio_ID').alias('CIDs'),
+             f.first('label').alias('name')) # TODO: is this label?
+
+    if save_as is not None:
+        df.write.mode('overwrite').parquet(save_as)
+
+    return df
 
 
 def getQuotesFromSpeakers(df: DataFrame, speakers: DataFrame) -> DataFrame:
@@ -71,8 +102,8 @@ def getQuotesFromSpeakers(df: DataFrame, speakers: DataFrame) -> DataFrame:
     Narrows down the quotation dataframe to quotations uttered by one of the speakers in the speaker Dataframe.
     To achieve this, first
     """
-    # TODO
-    return df
+    df = df.select('*', f.explode('qids').alias('qid')).drop('qids')
+    return df.join(speakers.select('qid'), on='qid', how='left anti')
 
 
 def main():
@@ -94,7 +125,7 @@ def main():
     print(f'Time for preprocessing and sanitizing: {t1-t:.2f}s.')
     print(f'Went from {initial_count} quotations down to {sanitized_count} quotations.')
 
-    politicians = speaker.filter(f.col('occupation').isin(jobIDs))
+    politicians = getPoliticians(speaker, jobIDs, args.save_politicians)
     df = getQuotesFromSpeakers(df, politicians)
 
     df.repartition('year', 'month').write.mode('overwrite').parquet(args.save)
@@ -117,8 +148,12 @@ def main():
             try:
                 sys.stdout = logfile
                 df.printSchema()
+                print()
             finally:
                 sys.stdout = __stdout
+
+            if args.save_politicians is not None:
+                logfile.write(f'Wrote all politicians to: {args.save_politicians}\n')
 
     print(f'Over and Out. Time: {time.time() - t:.2f}s')
 

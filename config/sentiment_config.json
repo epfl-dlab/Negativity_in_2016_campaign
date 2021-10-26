@@ -1,0 +1,18 @@
+{
+    "liwc_categories": [
+	"Posemo",
+	"Negemo",
+	"Anx",
+	"Anger",
+	"Sad",
+	"Swear",
+	"Tentat",
+	"Certain"
+    ],
+    "empath_categories": [
+        "swearing_terms",
+        "science",
+        "negative_emotion",
+	"positive_emotion"
+    ]
+}
