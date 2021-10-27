@@ -10,7 +10,7 @@ import time
 from typing import List
 
 sys.path.append(str(Path(__file__).parent.parent))  # Only works when keeping the original repo structure
-import utils.pyspark_udfs as udf_util  # Has to be importet like that or PySpark has problems with custom udf's
+import utils.pyspark_udfs as udf_util  # Has to be imported like that or PySpark has problems with custom udf's
 
 
 parser = ArgumentParser()
@@ -93,6 +93,7 @@ def getPoliticians(df: DataFrame, jobIDs: List[str], save_as: str = None) -> Dat
         .agg(f.collect_set('party').alias('parties'),
              f.collect_set('gender').alias('genders'),
              f.collect_set('US_congress_bio_ID').alias('CIDs'),
+             f.collect_set('political_occupations'),
              f.first('label').alias('name'))
 
     if save_as is not None:
@@ -107,7 +108,7 @@ def getQuotesFromSpeakers(df: DataFrame, speakers: DataFrame) -> DataFrame:
     To achieve this, first
     """
     df = df.select('*', f.explode('qids').alias('qid')).drop('qids')
-    return df.join(speakers.select('qid'), on='qid', how='left_anti')
+    return df.join(speakers.select('qid'), on='qid')
 
 
 def main():
