@@ -16,7 +16,8 @@ import utils.pyspark_udfs as udf_util  # Has to be imported like that or PySpark
 parser = ArgumentParser()
 parser.add_argument('--quotations', help='Link to Quotebank in quotation centric format - stored as parquet.', required=True)
 parser.add_argument('--occupations', help='JSON file, mapping Wikidata QIDs to (political) occupations', required=True)
-parser.add_argument('--speaker', help='A Wikidata Dump containing speaker attributes - stored as parquet.', required=True)
+parser.add_argument('--speaker', help='A Wikidata Dump containing speaker attributes - stored as parquet.', required=False)
+parser.add_argument('--politicians', help='If given, will not extract politicians again but use this pre-existing Data Frame.', required=False)
 parser.add_argument('--save', help='Save political data here.', required=True)
 parser.add_argument('--save_politicians', help='If given, will store a dataframe containing all politicians.')
 parser.add_argument('--log', help='Path to a logfile', required=False)
@@ -120,7 +121,8 @@ def main():
     political_occupations = json.load(open(args.occupations, 'r'))
     jobIDs = list(political_occupations.keys())
     df = spark.read.parquet(args.quotations)
-    speaker = spark.read.parquet(args.speaker)
+    if args.politicians is None:
+        speaker = spark.read.parquet(args.speaker)
 
     df = preprocess(df)
     initial_count = df.count()
@@ -130,7 +132,10 @@ def main():
     print(f'Time for preprocessing and sanitizing: {t1-t:.2f}s.')
     print(f'Went from {initial_count} quotations down to {sanitized_count} quotations.')
 
-    politicians = getPoliticians(speaker, jobIDs, args.save_politicians)
+    if args.politicians is None:
+        politicians = getPoliticians(speaker, jobIDs, args.save_politicians)
+    else:
+        politicians = spark.read.parquet(args.politicians)
     df = getQuotesFromSpeakers(df, politicians)
 
     df.repartition('year', 'month').write.mode('overwrite').parquet(args.save)
