@@ -93,7 +93,7 @@ def getPoliticians(df: DataFrame, jobIDs: List[str], save_as: str = None) -> Dat
         .agg(f.collect_set('party').alias('parties'),
              f.collect_set('gender').alias('genders'),
              f.collect_set('US_congress_bio_ID').alias('CIDs'),
-             f.collect_set('political_occupations'),
+             f.collect_set('occupation').alias('political_occupations'),
              f.first('label').alias('name'))
 
     if save_as is not None:
