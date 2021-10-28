@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from pyspark.ml.feature import CountVectorizer
 from pyspark.sql import DataFrame, SparkSession
+from pyspark import StorageLevel
 import pyspark.sql.functions as f
 import sys
 import time
@@ -126,7 +127,7 @@ def main():
 
     df = preprocess(df)
     initial_count = df.count()
-    df = sanitize(df).cache()
+    df = sanitize(df).persist(storageLevel=StorageLevel.DISK_ONLY)
     sanitized_count = df.count()
     t1 = time.time()
     print(f'Time for preprocessing and sanitizing: {t1-t:.2f}s.')
