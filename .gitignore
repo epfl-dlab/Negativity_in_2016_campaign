@@ -1,6 +1,9 @@
 # Ignore large files
 **.parquet
 
+# Figures
+img/
+
 # Ignore JetBrain IDE files
 **/idea/
 **/.idea/

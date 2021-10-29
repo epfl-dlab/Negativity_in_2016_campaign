@@ -72,7 +72,7 @@ def _df_postprocessing(df: pd.DataFrame, features: List[str], MEAN: pd.DataFrame
     df[features] = (df[features] - MEAN) / STD
 
     # Limit what will be returned, excludes additional information like e.g. leftovers from speaker names or URLs
-    keep = features + ['date', 'time_delta', 'gender', 'party', 'governing_party', 'congress_member', 'year', 'month']
+    keep = features + ['date', 'time_delta', 'gender', 'party', 'governing_party', 'congress_member', 'year', 'month', 'verbosity']
     keep = [col for col in keep if col in df.columns]
 
     return df[keep]
@@ -276,6 +276,7 @@ def getScoresByVerbosity(df, splits: int = 4) -> pd.DataFrame:
     df = _score_dict_to_pandas(scores, list(scores.keys()), columns)
     df[['year', 'month', 'verbosity']] = df.index.map(lambda x: list(map(int, x.split('-')))).to_list()
     df.index = df.index.map(_make_date)
+    print(len(df))
 
     return df
 
