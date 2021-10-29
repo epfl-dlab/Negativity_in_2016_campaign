@@ -315,17 +315,18 @@ class RDD:
                      timeDelta='1y')
 
         # Performance Annotations
-        aicc_rdd = aicc(self.rdd[feature].aic, 4, len(self.data))
-        aicc_lin = aicc(self.lin_reg[feature].aic, 2, len(self.data))
-        w_rdd = w_i(aicc_rdd, [aicc_rdd, aicc_lin])
-        annotations = ', '.join([
-            f'$r^2_{"{RDD, adj}"}$ : {self.rdd[feature].loc["r2_adj"]:.2f}',
-            f'$r^2_{"{lin, adj}"}$ : {self.lin_reg[feature].loc["r2_adjust"]:.2f}',
-            f'$F$ : {self.rdd[feature].loc["f_score"]:.1f}',
-            '$w_{RDD}$: ' + f'{w_rdd:.3f}',
-            r'$\Delta_{AICc}$: ' + f'{aicc_lin - aicc_rdd:.2f}'
-        ])
-        ax.set_title(annotations, fontsize=FONTSIZE)
+        if kwargs.get('annotate', True):
+            aicc_rdd = aicc(self.rdd[feature].aic, 4, len(self.data))
+            aicc_lin = aicc(self.lin_reg[feature].aic, 2, len(self.data))
+            w_rdd = w_i(aicc_rdd, [aicc_rdd, aicc_lin])
+            annotations = ', '.join([
+                f'$r^2_{"{RDD, adj}"}$ : {self.rdd[feature].loc["r2_adj"]:.2f}',
+                f'$r^2_{"{lin, adj}"}$ : {self.lin_reg[feature].loc["r2_adjust"]:.2f}',
+                f'$F$ : {self.rdd[feature].loc["f_score"]:.1f}',
+                '$w_{RDD}$: ' + f'{w_rdd:.3f}',
+                r'$\Delta_{AICc}$: ' + f'{aicc_lin - aicc_rdd:.2f}'
+            ])
+            ax.set_title(annotations, fontsize=FONTSIZE)
 
         # Parameter Annotations
         if parameters:
@@ -341,10 +342,11 @@ class RDD:
                     horizontalalignment='right', bbox=box_props)
 
         # Visuals
-        data_values = [val for val in self.data[feature] if not np.isnan(val)]
-        ax.set_ylim(min(data_values) - 1, max(data_values) + 1)
-        plt.legend(fontsize=FONTSIZE, loc='lower left', framealpha=1, fancybox=False, ncol=2)
-        plt.tight_layout()
+        if kwargs.get('visuals', True):
+            data_values = [val for val in self.data[feature] if not np.isnan(val)]
+            ax.set_ylim(min(data_values) - 1, max(data_values) + 1)
+            plt.legend(fontsize=FONTSIZE, loc='lower left', framealpha=1, fancybox=False, ncol=2)
+            plt.tight_layout()
 
         return fig, ax
 
