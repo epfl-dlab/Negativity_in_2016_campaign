@@ -38,8 +38,8 @@ def _prep_people(df: DataFrame) -> DataFrame:
 
     return df \
         .withColumn('congress_member', (f.size('CIDs') > 0).cast('integer')) \
-        .select('qid', 'congress_member', 'gender', f.explode('party').alias('tmp_party')) \
-        .select('*', f.explode('gender').alias('tmp_gender')) \
+        .select('qid', 'congress_member', 'gender', f.explode('parties').alias('tmp_party')) \
+        .select('*', f.explode('genders').alias('tmp_gender')) \
         .select('qid', 'congress_member', __map_party('tmp_party').alias('party'), __map_gender('tmp_gender').alias('gender')) \
         .dropna(how='any', subset=['gender', 'party'])
 
