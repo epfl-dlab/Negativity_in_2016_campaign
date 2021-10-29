@@ -371,7 +371,7 @@ def RDD_statsmodels(data: pd.DataFrame, t: str = 'time_delta') -> Dict[str, Any]
 
     results = dict()
 
-    for feature in tqdm(language_features, desc='RDD fits'):
+    for feature in language_features:
         tmp = data.copy(deep=True)  # Don't alter input data
         tmp['date'] = pd.to_datetime(tmp['date'])  # Make sure date formatting is uniform
         tmp['threshold'] = tmp['date'].apply(lambda dt: int(dt >= KINK))
@@ -441,7 +441,7 @@ def main():
     storage_folder = Path(args.save)
     storage_folder.mkdir(exist_ok=True)
 
-    for file in data_folder.iterdir():
+    for file in tqdm(data_folder.iterdir()):
         if not file.name.endswith('.csv'):
             continue
         data = pd.read_csv(str(file)).sort_values('time_delta')
