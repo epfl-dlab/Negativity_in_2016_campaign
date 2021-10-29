@@ -102,7 +102,7 @@ def count(df: DataFrame, regexPattern: Dict[str, str]) -> DataFrame:
 
     if 'numTokens' not in originalColumns:
         print('And also one tokenizer for the number of tokens.')
-        tokenizer = Tokenizer(inputCol='ANALYSIS_CONTENT', outputCol='numTokens')
+        tokenizer = Tokenizer(inputCol='ANALYSIS_CONTENT', outputCol='numTokens_tokens')
         df = tokenizer.transform(df)
         newColumns.append('numTokens')
 
