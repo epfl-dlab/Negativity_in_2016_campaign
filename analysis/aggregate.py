@@ -70,7 +70,12 @@ def _df_postprocessing(df: pd.DataFrame, features: List[str], MEAN: pd.DataFrame
     df['time_delta'] = df.apply(lambda r: int((r.date.year - start.year) * 12 + r.date.month - start.month), axis=1)
 
     df[features] = (df[features] - MEAN) / STD
-    return df
+
+    # Limit what will be returned, excludes additional information like e.g. leftovers from speaker names or URLs
+    keep = features + ['date', 'time_delta', 'gender', 'party', 'governing_party', 'congress_member', 'year', 'month']
+    keep = [col for col in keep if col in df.columns]
+
+    return df[keep]
 
 
 def _make_date(s: str) -> datetime:
@@ -99,7 +104,7 @@ def getScores(df: DataFrame) -> pd.DataFrame:
 
     for col in iterbar:
         iterbar.set_description(col)
-        iterbar.update()
+        iterbar.update(n=0)
         counts = df.groupby(['year', 'month', col, 'numTokens']) \
             .agg(f.count('*').alias('cnt')) \
             .withColumn('weighted_itf', f.col('cnt') * f.col(col) / f.col('numTokens')) \
@@ -137,7 +142,7 @@ def getScoresByGroups(df: DataFrame, groupby: List[str]) -> pd.DataFrame:
 
     for col in iterbar:
         iterbar.set_description(col)
-        iterbar.update()
+        iterbar.update(n=0)
         counts = df.groupby([*groupby, col, 'numTokens']) \
             .agg(f.count('*').alias('cnt')) \
             .withColumn('weighted_score', f.col('cnt') * f.col(col) / f.col('numTokens')) \
@@ -181,7 +186,7 @@ def getScoresBySpeaker(df: DataFrame) -> pd.DataFrame:
 
     for col in iterbar:
         iterbar.set_description(col)
-        iterbar.update()
+        iterbar.update(n=0)
         counts = df.groupby(['year', 'month', 'qid', col, 'numTokens']) \
             .agg(f.count('*').alias('cnt')) \
             .withColumn('weighted_score', f.col('cnt') * f.col(col) / f.col('numTokens')) \
@@ -238,7 +243,7 @@ def getScoresByVerbosity(df, splits: int = 4) -> pd.DataFrame:
 
     for col in iterbar:
         iterbar.set_description(col)
-        iterbar.update()
+        iterbar.update(n=0)
         counts = df.groupby(['year', 'month', 'qid', col, 'numTokens']) \
             .agg(f.count('*').alias('cnt'), f.first('verbosity').alias('verbosity')) \
             .withColumn('weighted_score', f.col('cnt') * f.col(col) / f.col('numTokens')) \
