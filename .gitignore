@@ -1,5 +1,3 @@
-data/
-
 # Ignore JetBrain IDE files
 **/idea/
 **/.idea/
