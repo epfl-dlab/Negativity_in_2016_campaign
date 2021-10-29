@@ -9,9 +9,11 @@ from pathlib import Path
 import pickle
 from statsmodels.stats.outliers_influence import summary_table
 import statsmodels.formula.api as smf
+import sys
 from typing import Any, Dict, List, Tuple, Union
 from tqdm import tqdm
 
+sys.path.append(str(Path(__file__).parent.parent))  # Only works when keeping the original repo structure
 from utils.plots import timeLinePlot, ONE_COL_FIGSIZE
 
 parser = argparse.ArgumentParser()
@@ -437,6 +439,7 @@ def main():
     args = parser.parse_args()
     data_folder = Path(args.data)
     storage_folder = Path(args.save)
+    storage_folder.mkdir(exist_ok=True)
 
     for file in data_folder.iterdir():
         if not file.name.endswith('.csv'):

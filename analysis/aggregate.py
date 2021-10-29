@@ -293,8 +293,6 @@ def main():
     df = df.join(people, on='qid')
 
     def save(_df: pd.DataFrame, name: str):
-        print(name)
-        print(df.head(10))
         _df.to_csv(base.joinpath(name + '.csv').open('w'))
 
     # Basic Quotation Aggregation
