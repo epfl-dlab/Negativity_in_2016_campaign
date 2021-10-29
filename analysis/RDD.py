@@ -5,6 +5,7 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from pathlib import Path
 import pickle
 from statsmodels.stats.outliers_influence import summary_table
 import statsmodels.formula.api as smf
@@ -14,8 +15,8 @@ from tqdm import tqdm
 from utils.plots import timeLinePlot, ONE_COL_FIGSIZE
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--data', default='/home/jonathan/thesis/data/paper/scores/all_outliers.csv')
-parser.add_argument('--save', default=None)
+parser.add_argument('--data', help='Folder with aggregates', required=True)
+parser.add_argument('--save', help='Folder to save RDD fits to',  required=True)
 
 CM = 1/2.54
 FONTSIZE = 14
@@ -241,7 +242,7 @@ class RDD:
             summary = pd.read_html(res.summary().tables[1].as_html(), header=0, index_col=0)[0]
             summary = summary.rename(index={'Intercept': r'$\alpha_0$', 'C(threshold)[T.1]': r'$\alpha_1$',
                                             'time_delta': r'$\beta_0$', 'C(threshold)[T.1]:time_delta': r'$\beta_1$',
-                                            'ruling_party': 'governing', 'congress_member': 'congress'},
+                                            'governing_party': 'governing', 'congress_member': 'congress'},
                                      columns={'P>|t|': 'p-value', '[0.025': 'CI_lower', '0.975]': 'CI_upper'}
                                      )[['coef', 'p-value', 'CI_lower', 'CI_upper']]
             stats.append(summary.T.stack())
@@ -376,7 +377,7 @@ def RDD_statsmodels(data: pd.DataFrame, t: str = 'time_delta') -> Dict[str, Any]
         tmp[t] = tmp[t] - delta_at_kink
 
         # Will automatically fit on all of the speaker attributes as well if they are given.
-        speaker_attributes = [c for c in ('party', 'gender', 'congress_member', 'ruling_party') if c in tmp.columns]
+        speaker_attributes = [c for c in ('party', 'gender', 'congress_member', 'governing_party') if c in tmp.columns]
         for att in speaker_attributes:
             tmp[att] = tmp[att].map({0: 1, 1: 0})
         formula = f'{feature} ~ C(threshold) * {t}'  # RDD base formula
@@ -411,7 +412,7 @@ def linear_regression(data: pd.DataFrame, t='time_delta'):
     results = dict()
 
     for feature in language_features:
-        speaker_attributes = [c for c in ('party', 'gender', 'congress', 'ruling_party') if c in data.columns]
+        speaker_attributes = [c for c in ('party', 'gender', 'congress', 'governing_party') if c in data.columns]
         formula = f'{feature} ~ {t}'
         if len(speaker_attributes) > 0:
             formula += ' + ' + ' + '.join(speaker_attributes)
@@ -434,24 +435,22 @@ def linear_regression(data: pd.DataFrame, t='time_delta'):
 
 def main():
     args = parser.parse_args()
-    data_file = args.data
+    data_folder = Path(args.data)
+    storage_folder = Path(args.save)
 
-    data = pd.read_csv(data_file).sort_values('time_delta')
+    for file in data_folder.iterdir():
+        if not file.name.endswith('.csv'):
+            continue
+        data = pd.read_csv(str(file)).sort_values('time_delta')
 
-    rdd_results = RDD_statsmodels(data)
-    lin_reg = linear_regression(data)
+        rdd_results = RDD_statsmodels(data)
+        lin_reg = linear_regression(data)
+        reg = RDD(data, rdd_results, lin_reg)
 
-    print('Processing results')
-    Regressions = RDD(data, rdd_results, lin_reg)
-
-    if args.save is not None:
-        pickle.dump(Regressions, open(args.save, 'wb'))
-        # with Path(args.save).parent.joinpath('regression_as_latex.txt').open('w') as p:
-        #     p.write(table)
-    else:
-        # Useful for debugging, generate an arbitrary plot.
-        Regressions.plot('liwc_Negemo')
-        print('discarding results')
+        fname = file.name.split('.')[0]
+        pickle.dump(reg, storage_folder.joinpath(fname + '_RDD.pickle').open('wb'))
+        with storage_folder.joinpath(fname + '_tabular.tex').open('w') as tab:
+            tab.write(reg.get_table())
 
 
 if __name__ == '__main__':
