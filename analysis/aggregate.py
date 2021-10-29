@@ -136,7 +136,7 @@ def getScoresByGroups(df: DataFrame, groupby: List[str]) -> pd.DataFrame:
             .filter(~f.col('yyyy-mm').isin(MISSING_MONTHS)) \
             .drop('yyyy-mm') \
             .groupby(list(groupby)) \
-            .agg(f.sum('cnt').alias('total_cnt'), f.sum('weighted_scores').alias('summed_weighted_scores')) \
+            .agg(f.sum('cnt').alias('total_cnt'), f.sum('weighted_score').alias('summed_weighted_scores')) \
             .rdd \
             .map(lambda r: (*[r[g] for g in groupby], r['summed_weighted_scores'], r['total_cnt'])).collect()
 
