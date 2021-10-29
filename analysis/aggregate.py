@@ -276,7 +276,6 @@ def getScoresByVerbosity(df, splits: int = 4) -> pd.DataFrame:
     df = _score_dict_to_pandas(scores, list(scores.keys()), columns)
     df[['year', 'month', 'verbosity']] = df.index.map(lambda x: list(map(int, x.split('-')))).to_list()
     df.index = df.index.map(_make_date)
-    print(len(df))
 
     return df
 
@@ -316,6 +315,7 @@ def main():
     save(_df_postprocessing(agg, features, MEAN, STD), 'SpeakerAggregation')
 
     spark.sparkContext.setLogLevel('ERROR')  # Window Warning is Expected and can be ignored
+    agg = getScoresByVerbosity(df)
     save(_df_postprocessing(agg, features, MEAN, STD), 'VerbosityAggregation')
 
 

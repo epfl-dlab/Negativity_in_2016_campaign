@@ -441,19 +441,39 @@ def main():
     storage_folder = Path(args.save)
     storage_folder.mkdir(exist_ok=True)
 
-    for file in tqdm(data_folder.iterdir()):
+    for file in tqdm(list(data_folder.iterdir())):
         if not file.name.endswith('.csv'):
             continue
         data = pd.read_csv(str(file)).sort_values('time_delta')
-
-        rdd_results = RDD_statsmodels(data)
-        lin_reg = linear_regression(data)
-        reg = RDD(data, rdd_results, lin_reg)
-
         fname = file.name.split('.')[0]
-        pickle.dump(reg, storage_folder.joinpath(fname + '_RDD.pickle').open('wb'))
-        with storage_folder.joinpath(fname + '_tabular.tex').open('w') as tab:
-            tab.write(reg.get_table())
+
+        masks = dict()
+        make_folder = None
+        if 'verbosity' in data.columns:
+            make_folder = 'verbosity'
+            for verb in data['verbosity'].unique():
+                masks['_verbosity_{}'.format(verb)] = data.verbosity == verb
+
+        elif ('party' in data.columns) and not ('gender' in data.columns):  # Party Only split
+            make_folder = 'parties'
+            masks['_republicans'] = data.party == 0
+            masks['_democrats'] = data.party == 1
+
+        else:
+            masks = {'': np.ones(len(data), dtype=bool)}  # Default, no mask
+
+        for prefix, mask in masks.items():
+            tmp = data[mask]
+            rdd_results = RDD_statsmodels(tmp)
+            lin_reg = linear_regression(tmp)
+            reg = RDD(tmp, rdd_results, lin_reg)
+
+            save_in = storage_folder
+            if make_folder is not None:
+                save_in = storage_folder.joinpath(make_folder)
+            pickle.dump(reg, save_in.joinpath(fname + '_RDD' + prefix + '.pickle').open('wb'))
+            with save_in.joinpath(fname + '_tabular' + prefix + '.tex').open('w') as tab:
+                tab.write(reg.get_table())
 
 
 if __name__ == '__main__':
