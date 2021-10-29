@@ -135,12 +135,12 @@ def main():
     # The line that matters:
     df = count(quotes.select(keepColumns), allPatterns)
     df = df.withColumnRenamed('ANALYSIS_CONTENT', args.content_column)
-    df.repartition('year', 'month').write.mode('overwrite').partitionBy('year', 'month').parquet(args.saveAs)
+    df.repartition('year', 'month').write.mode('overwrite').partitionBy('year', 'month').parquet(args.save)
 
     if args.logfile is not None:
         with open(args.logfile, 'w') as log:
             log.write('Log for {}\n'.format(datetime.today()))
-            log.write('Wrote to {}\n'.format(args.saveAs))
+            log.write('Wrote to {}\n'.format(args.save))
             log.write('Extracted for {} Patterns. Took {:.2f}s.\n'.format(len(allPatterns), time.time() - t0))
 
             __stdout = sys.stdout
