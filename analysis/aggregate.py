@@ -94,10 +94,10 @@ def getScores(df: DataFrame) -> pd.DataFrame:
         counts = df.groupby(['year', 'month', col, 'numTokens']) \
             .agg(f.count('*').alias('cnt')) \
             .withColumn('weighted_itf', f.col('cnt') * f.col(col) / f.col('numTokens')) \
-            .groupby(['year', 'month']) \
             .withColumn('yyyy-mm', f.concat(f.col('year'), f.lit('-'), f.col('month'))) \
             .filter(~f.col('yyyy-mm').isin(MISSING_MONTHS)) \
             .drop('yyyy-mm') \
+            .groupby(['year', 'month']) \
             .agg(f.sum('cnt').alias('total_cnt'), f.sum('weighted_score').alias('summed_weighted_score')) \
             .withColumn('score', f.col('summed_weighted_score') / f.col('total_cnt')) \
             .rdd \
@@ -132,10 +132,10 @@ def getScoresByGroups(df: DataFrame, groupby: List[str]) -> pd.DataFrame:
         counts = df.groupby([*groupby, col, 'numTokens']) \
             .agg(f.count('*').alias('cnt')) \
             .withColumn('weighted_score', f.col('cnt') * f.col(col) / f.col('numTokens')) \
-            .groupby(list(groupby)) \
             .withColumn('yyyy-mm', f.concat(f.col('year'), f.lit('-'), f.col('month'))) \
             .filter(~f.col('yyyy-mm').isin(MISSING_MONTHS)) \
             .drop('yyyy-mm') \
+            .groupby(list(groupby)) \
             .agg(f.sum('cnt').alias('total_cnt'), f.sum('weighted_scores').alias('summed_weighted_scores')) \
             .rdd \
             .map(lambda r: (*[r[g] for g in groupby], r['summed_weighted_scores'], r['total_cnt'])).collect()
@@ -176,10 +176,10 @@ def getScoresBySpeaker(df: DataFrame) -> pd.DataFrame:
         counts = df.groupby(['year', 'month', 'qid', col, 'numTokens']) \
             .agg(f.count('*').alias('cnt')) \
             .withColumn('weighted_score', f.col('cnt') * f.col(col) / f.col('numTokens')) \
-            .groupby(['year', 'month', 'qid']) \
             .withColumn('yyyy-mm', f.concat(f.col('year'), f.lit('-'), f.col('month'))) \
             .filter(~f.col('yyyy-mm').isin(MISSING_MONTHS)) \
             .drop('yyyy-mm') \
+            .groupby(['year', 'month', 'qid']) \
             .agg(f.sum('cnt').alias('total_cnt'), f.sum('weighted_score').alias('summed_weighted_score')) \
             .rdd \
             .map(lambda r: (r['year'], r['month'], r['qid'], r['summed_weighted_score'], r['total_cnt'])).collect()
@@ -233,10 +233,10 @@ def getScoresByVerbosity(df, splits: int = 4) -> pd.DataFrame:
         counts = df.groupby(['year', 'month', 'qid', col, 'numTokens']) \
             .agg(f.count('*').alias('cnt'), f.first('verbosity').alias('verbosity')) \
             .withColumn('weighted_score', f.col('cnt') * f.col(col) / f.col('numTokens')) \
-            .groupby('year', 'month', 'qid') \
             .withColumn('yyyy-mm', f.concat(f.col('year'), f.lit('-'), f.col('month'))) \
             .filter(~f.col('yyyy-mm').isin(MISSING_MONTHS)) \
             .drop('yyyy-mm') \
+            .groupby('year', 'month', 'qid') \
             .agg((f.sum('weighted_score') / f.sum('cnt')).alias('speaker_score'),
                  f.sum('cnt').alias('speaker_cnt'),
                  f.first('verbosity').alias('verbosity')) \
