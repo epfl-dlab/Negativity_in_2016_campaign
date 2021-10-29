@@ -273,7 +273,7 @@ def main():
     base = Path(args.save)
     base.mkdir(exist_ok=True)
 
-    df = spark.read.parquet(args.file)
+    df = spark.read.parquet(args.sentiment)
     features = [c for c in df.columns if '_' in c]
     people = _prep_people(spark.read.parquet(args.people)).cache()
     df = df.join(people, on='qid')
