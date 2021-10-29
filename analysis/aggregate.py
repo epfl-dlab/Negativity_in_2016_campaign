@@ -9,9 +9,11 @@ from pathlib import Path
 from pyspark.sql import DataFrame, SparkSession, Window
 import pyspark.sql.functions as f
 from pyspark.sql.types import IntegerType
+import sys
 from typing import Dict, List, Union
 from tqdm import tqdm
 
+sys.path.append(str(Path(__file__).parent.parent))  # Only works when keeping the original repo structure
 from preparations.getPolitics import DEMOCRATIC_PARTY, MALE, FEMALE, REPUBLICAN_PARTY
 
 MISSING_MONTHS = ['2010-5', '2010-6', '2016-1', '2016-3', '2016-6', '2016-10', '2016-11', '2017-1']
@@ -269,6 +271,7 @@ def main():
     spark = SparkSession.builder.getOrCreate()
     spark.sparkContext.setLogLevel('WARN')
     base = Path(args.save)
+    base.mkdir(exist_ok=True)
 
     df = spark.read.parquet(args.file)
     features = [c for c in df.columns if '_' in c]
@@ -301,7 +304,7 @@ def main():
 
     spark.sparkContext.setLogLevel('ERROR')  # Window Warning is Expected and can be ignored
     save(_df_postprocessing(agg, features, MEAN, STD), 'VerbosityAggregation')
-    
+
 
 if __name__ == '__main__':
     main()
