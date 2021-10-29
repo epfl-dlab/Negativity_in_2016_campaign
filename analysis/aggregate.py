@@ -46,11 +46,20 @@ def _prep_people(df: DataFrame) -> DataFrame:
 
 def _add_governing_column(df: pd.DataFrame) -> pd.DataFrame:
     """Uses the date and the party column to add a 'governing_party' indicator column."""
-    df['governing_party'] = df.apply(lambda r: int(
-        (r.date <= OBAMA_ELECTION) and (r.party == 0) or
-        ((r.date > OBAMA_ELECTION) and (r.date <= TRUMP_ELECTION)) and (r.party == 1) or
-        (r.date > TRUMP_ELECTION) and (r.party == 0)
-    ), axis=1)
+    if 'date' not in df.columns:
+        tmp = df.copy(deep=True)
+        tmp['date'] = df.index
+        df['governing_party'] = tmp.apply(lambda r: int(
+            (r.date <= OBAMA_ELECTION) and (r.party == 0) or
+            ((r.date > OBAMA_ELECTION) and (r.date <= TRUMP_ELECTION)) and (r.party == 1) or
+            (r.date > TRUMP_ELECTION) and (r.party == 0)
+        ), axis=1)
+    else:
+        df['governing_party'] = df.apply(lambda r: int(
+            (r.date <= OBAMA_ELECTION) and (r.party == 0) or
+            ((r.date > OBAMA_ELECTION) and (r.date <= TRUMP_ELECTION)) and (r.party == 1) or
+            (r.date > TRUMP_ELECTION) and (r.party == 0)
+        ), axis=1)
     return df
 
 
@@ -85,7 +94,7 @@ def getScores(df: DataFrame) -> pd.DataFrame:
     df: Spark Dataframe containing sentiment counts.
     """
     scores = {}
-    columns = [c for c in df.columns if '_' in c]
+    columns = [c for c in df.columns if ('liwc' in c) or ('empath' in c)]
     iterbar = tqdm(columns)
 
     for col in iterbar:
@@ -122,7 +131,7 @@ def getScoresByGroups(df: DataFrame, groupby: List[str]) -> pd.DataFrame:
     groupby: Binary Variables to group by.
     """
     scores = {}
-    columns = [c for c in df.columns if '_' in c]
+    columns = [c for c in df.columns if ('liwc' in c) or ('empath' in c)]
     iterbar = tqdm(columns)
     groupby = ['year', 'month'] + groupby
 
@@ -167,7 +176,7 @@ def getScoresBySpeaker(df: DataFrame) -> pd.DataFrame:
     df: Spark dataframe containing counts
     """
     scores = {}
-    columns = [c for c in df.columns if '_' in c]
+    columns = [c for c in df.columns if ('liwc' in c) or ('empath' in c)]
     iterbar = tqdm(columns)
 
     for col in iterbar:
@@ -224,7 +233,7 @@ def getScoresByVerbosity(df, splits: int = 4) -> pd.DataFrame:
     df = df.join(speaker_map, on='qid')
 
     scores = {}
-    columns = [c for c in df.columns if '_' in c]
+    columns = [c for c in df.columns if ('liwc' in c) or ('empath' in c)]
     iterbar = tqdm(columns)
 
     for col in iterbar:
@@ -274,13 +283,13 @@ def main():
     base.mkdir(exist_ok=True)
 
     df = spark.read.parquet(args.sentiment)
-    features = [c for c in df.columns if '_' in c]
+    features = [c for c in df.columns if ('liwc' in c) or ('empath' in c)]
     people = _prep_people(spark.read.parquet(args.people)).cache()
     df = df.join(people, on='qid')
 
     def save(_df: pd.DataFrame, name: str):
         print(name)
-        print(df.head())
+        print(df.head(10))
         _df.to_csv(base.joinpath(name + '.csv').open('w'))
 
     # Basic Quotation Aggregation
