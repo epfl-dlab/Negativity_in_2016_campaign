@@ -471,6 +471,7 @@ def main():
             save_in = storage_folder
             if make_folder is not None:
                 save_in = storage_folder.joinpath(make_folder)
+                save_in.mkdir(exist_ok=True)
             pickle.dump(reg, save_in.joinpath(fname + '_RDD' + prefix + '.pickle').open('wb'))
             with save_in.joinpath(fname + '_tabular' + prefix + '.tex').open('w') as tab:
                 tab.write(reg.get_table())
