@@ -315,17 +315,18 @@ class RDD:
                      timeDelta='1y')
 
         # Performance Annotations
-        aicc_rdd = aicc(self.rdd[feature].aic, 4, len(self.data))
-        aicc_lin = aicc(self.lin_reg[feature].aic, 2, len(self.data))
-        w_rdd = w_i(aicc_rdd, [aicc_rdd, aicc_lin])
-        annotations = ', '.join([
-            f'$r^2_{"{RDD, adj}"}$ : {self.rdd[feature].loc["r2_adj"]:.2f}',
-            f'$r^2_{"{lin, adj}"}$ : {self.lin_reg[feature].loc["r2_adjust"]:.2f}',
-            f'$F$ : {self.rdd[feature].loc["f_score"]:.1f}',
-            '$w_{RDD}$: ' + f'{w_rdd:.3f}',
-            r'$\Delta_{AICc}$: ' + f'{aicc_lin - aicc_rdd:.2f}'
-        ])
-        ax.set_title(annotations, fontsize=FONTSIZE)
+        if kwargs.get('annotate', True):
+            aicc_rdd = aicc(self.rdd[feature].aic, 4, len(self.data))
+            aicc_lin = aicc(self.lin_reg[feature].aic, 2, len(self.data))
+            w_rdd = w_i(aicc_rdd, [aicc_rdd, aicc_lin])
+            annotations = ', '.join([
+                f'$r^2_{"{RDD, adj}"}$ : {self.rdd[feature].loc["r2_adj"]:.2f}',
+                f'$r^2_{"{lin, adj}"}$ : {self.lin_reg[feature].loc["r2_adjust"]:.2f}',
+                f'$F$ : {self.rdd[feature].loc["f_score"]:.1f}',
+                '$w_{RDD}$: ' + f'{w_rdd:.3f}',
+                r'$\Delta_{AICc}$: ' + f'{aicc_lin - aicc_rdd:.2f}'
+            ])
+            ax.set_title(annotations, fontsize=FONTSIZE)
 
         # Parameter Annotations
         if parameters:
@@ -341,10 +342,11 @@ class RDD:
                     horizontalalignment='right', bbox=box_props)
 
         # Visuals
-        data_values = [val for val in self.data[feature] if not np.isnan(val)]
-        ax.set_ylim(min(data_values) - 1, max(data_values) + 1)
-        plt.legend(fontsize=FONTSIZE, loc='lower left', framealpha=1, fancybox=False, ncol=2)
-        plt.tight_layout()
+        if kwargs.get('visuals', True):
+            data_values = [val for val in self.data[feature] if not np.isnan(val)]
+            ax.set_ylim(min(data_values) - 1, max(data_values) + 1)
+            plt.legend(fontsize=FONTSIZE, loc='lower left', framealpha=1, fancybox=False, ncol=2)
+            plt.tight_layout()
 
         return fig, ax
 
@@ -367,7 +369,7 @@ def RDD_statsmodels(data: pd.DataFrame, t: str = 'time_delta') -> Dict[str, Any]
     -------
     A dictionary of RDD parameters for fitted RDD on all features. Can be used by the RDD class.
     """
-    language_features = [c for c in data.columns if ('_' in c) and (c != 'time_delta')]  # liwc_X and empath_X
+    language_features = [c for c in data.columns if ('empath' in c) or ('liwc' in c)]  # liwc_X and empath_X
 
     results = dict()
 
@@ -380,8 +382,6 @@ def RDD_statsmodels(data: pd.DataFrame, t: str = 'time_delta') -> Dict[str, Any]
 
         # Will automatically fit on all of the speaker attributes as well if they are given.
         speaker_attributes = [c for c in ('party', 'gender', 'congress_member', 'governing_party') if c in tmp.columns]
-        for att in speaker_attributes:
-            tmp[att] = tmp[att].map({0: 1, 1: 0})
         formula = f'{feature} ~ C(threshold) * {t}'  # RDD base formula
         if len(speaker_attributes) > 0:
             formula += ' + ' + ' + '.join(speaker_attributes)
@@ -464,6 +464,8 @@ def main():
 
         for prefix, mask in masks.items():
             tmp = data[mask]
+            if prefix in ('_democratic', '_republican'):
+                tmp.drop('party', axis=1)
             rdd_results = RDD_statsmodels(tmp)
             lin_reg = linear_regression(tmp)
             reg = RDD(tmp, rdd_results, lin_reg)
