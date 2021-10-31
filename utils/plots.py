@@ -128,7 +128,7 @@ def timeLinePlot(x, y,
 
     # includeElection can be anything that is boolean true for presidential elections. If it is 'all',
     # all yearly November election tuesdays are plotted
-    if bool(kwargs.get('includeElections', False)):
+    if bool(kwargs.get('includeElections', True)):
         for electionDay in ELECTION_TUESDAYS:
             if electionDay in PRESIDENTIAL_ELECTIONS:
                 ax.axvline(x=electionDay, linewidth=2, c='red', linestyle='dotted')
@@ -149,25 +149,22 @@ def timeLinePlot(x, y,
     return fig, ax
 
 
-def saveFigure(fig: plt.Figure, name: str, folder: str, dpi: int = 300, excludeTightLayout: bool = False):
+def saveFigure(fig: plt.Figure, path: Path, dpi: int = 300, excludeTightLayout: bool = False):
     """
     A wrapper to save Figures as PDF
     Parameters
     ----------
     fig: Figure to save
-    name: Name to use when saving
-    folder: Folder to save figure at
+    path: Path to save figure at
     dpi: Image resolution
     excludeTightLayout: Per default, tight layout will be applied. If False, will no do that.
     """
-    if '.' in name:
-        raise ValueError('Invalid character "." in filename. Do not include file-endings.')
+    if '.' not in path.name:
+        path = Path(str(path) + '.pdf')
 
     if not excludeTightLayout:
         fig.tight_layout(pad=1.1)
 
-    base = Path(folder)
+    base = path.parent
     base.mkdir(exist_ok=True)
-    path = str(base.joinpath(name + '.pdf'))
-
     fig.savefig(path, dpi=dpi, bbox_inches='tight')
