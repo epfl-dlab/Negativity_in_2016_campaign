@@ -369,7 +369,7 @@ def RDD_statsmodels(data: pd.DataFrame, t: str = 'time_delta') -> Dict[str, Any]
     -------
     A dictionary of RDD parameters for fitted RDD on all features. Can be used by the RDD class.
     """
-    language_features = [c for c in data.columns if ('_' in c) and (c != 'time_delta')]  # liwc_X and empath_X
+    language_features = [c for c in data.columns if ('empath' in c) or ('liwc' in c)]  # liwc_X and empath_X
 
     results = dict()
 
@@ -382,8 +382,6 @@ def RDD_statsmodels(data: pd.DataFrame, t: str = 'time_delta') -> Dict[str, Any]
 
         # Will automatically fit on all of the speaker attributes as well if they are given.
         speaker_attributes = [c for c in ('party', 'gender', 'congress_member', 'governing_party') if c in tmp.columns]
-        for att in speaker_attributes:
-            tmp[att] = tmp[att].map({0: 1, 1: 0})
         formula = f'{feature} ~ C(threshold) * {t}'  # RDD base formula
         if len(speaker_attributes) > 0:
             formula += ' + ' + ' + '.join(speaker_attributes)
@@ -466,6 +464,8 @@ def main():
 
         for prefix, mask in masks.items():
             tmp = data[mask]
+            if prefix in ('_democratic', '_republican'):
+                tmp.drop('party', axis=1)
             rdd_results = RDD_statsmodels(tmp)
             lin_reg = linear_regression(tmp)
             reg = RDD(tmp, rdd_results, lin_reg)

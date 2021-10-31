@@ -131,10 +131,10 @@ def timeLinePlot(x, y,
     if bool(kwargs.get('includeElections', True)):
         for electionDay in ELECTION_TUESDAYS:
             if electionDay in PRESIDENTIAL_ELECTIONS:
-                ax.axvline(x=electionDay, linewidth=2, c='red', linestyle='dotted')
+                ax.axvline(x=electionDay, linewidth=2, c='grey', linestyle='dotted')
             else:
                 if kwargs.get('includeElections') == 'all':
-                    ax.axvline(x=electionDay, linewidth=1, c='orange', linestyle='dotted')
+                    ax.axvline(x=electionDay, linewidth=1, c='grey', linestyle='dotted')
 
     # User defined inputs
     with warnings.catch_warnings():

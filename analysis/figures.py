@@ -1,9 +1,9 @@
 import argparse
 from copy import deepcopy
-
 import numpy as np
 from matplotlib.cm import get_cmap
 import matplotlib.pyplot as plt
+import pandas as pd
 import pickle
 from pathlib import Path
 import re
@@ -65,7 +65,7 @@ def _rdd_only(ax: plt.axis, feature: str, model: RDD, kwargs: Dict):
 
 
 def _scatter_only(ax: plt.axis, feature: str, model: RDD, color: str):
-    timeLinePlot(model.data.date, model.data[feature], ax=ax, snsargs={'s': 15, 'color': color}, kind='scatter')
+    timeLinePlot(model.data.date, model.data[feature], ax=ax, snsargs={'s': 25, 'color': color}, kind='scatter')
 
 
 def _grid_annotate(ax: plt.axis, model: RDD, feature: str, title: str):
@@ -224,32 +224,40 @@ def verbosity_plots(folder: Path, base: Path, verbosity_groups: Tuple[int] = (0,
 
     plasma = get_cmap('plasma')
     V_style = {
-        0: {'color': plasma(0.), 'linewidth': 3, 'label': 'Verbose Politicians'},
-        1: {'color': plasma(.25), 'linewidth': 3, 'label': '2nd Most Verbose Politicians'},
-        2: {'color': plasma(.5), 'linewidth': 3, 'label': '3rd Most Verbose Politicians'},
-        3: {'color': plasma(.75), 'linewidth': 3, 'label': 'Unknown Politicians'}
+        0: {'color': plasma(0.), 'linewidth': 3, 'label': 'Verbose'},
+        1: {'color': plasma(.25), 'linewidth': 3, 'label': '2nd Most Verbose'},
+        2: {'color': plasma(.5), 'linewidth': 3, 'label': '3rd Most Verbose'},
+        3: {'color': plasma(.75), 'linewidth': 3, 'label': 'Unknown'}
     }
 
+    lower, upper = (13926.0, 18578.0)  # Hard coded numeric Quotebank Date limits + margin
     for feature in features:
-        fig, ax = plt.subplots(figsize=ONE_COL_FIGSIZE)
-        lower, upper = (13926.0, 18578.0)  # Hard coded numeric Quotebank Date limits + margin
-
+        fig = plt.figure(figsize=TWO_COL_FIGSIZE)
+        gs = fig.add_gridspec(2, 4)
         y_min = np.Inf
         y_max = - np.Inf
-        for i in verbosity_groups:
-            model = models[i]
+
+        axs = []
+        for verbosity, model in models.items():
+            ax = fig.add_subplot(gs[0, verbosity])
+            axs.append(ax)
+            model.plot(feature, ax=ax, annotate=False, visuals=False)
             # Adapt y-limits of the plot to mean
             _, Y = model._get_rdd_plot_data(feature)
             y_min = min(y_min, min(Y))
             y_max = max(y_max, max(Y))
+            ax.get_legend().remove()
+            ax.set_title(V_style[verbosity]['label'], fontsize=FONTSIZE, fontweight='bold')
+
+        # Last Plot: Only most and least verbose
+        ax = fig.add_subplot(gs[1, :])
+        axs.append(ax)
+        for i in (0, 3):
+            model = models[i]
             _scatter_only(ax, feature, model, V_style[i]['color'])
             _rdd_only(ax, feature, model, V_style[i])
             _conf_only(ax, feature, model, V_style[i]['color'])
-
-        y_diff = y_max - y_min
-        ax.set_xlim(lower, upper)
-        ax.set_ylim(y_min - y_diff, y_max + y_diff)
-        ax.legend(loc='lower left', ncol=2, fontsize=FONTSIZE)
+            ax.legend(loc='lower left', ncol=2, fontsize=FONTSIZE)
 
         title = ',  '.join([
             f'$r^2_{"{Ver, adj}"}$={models[0].rdd[feature].loc["r2_adj"]:.2f}',
@@ -272,11 +280,74 @@ def verbosity_plots(folder: Path, base: Path, verbosity_groups: Tuple[int] = (0,
         ax.text(0.975, 0.95, box, transform=ax.transAxes, fontsize=FONTSIZE, multialignment='center',
                 verticalalignment='top', horizontalalignment='right', bbox=box_props)
 
+        y_diff = y_max - y_min
+        for ax in axs:
+            ax.set_xlim(lower, upper)
+            ax.set_ylim(y_min - y_diff, y_max + y_diff)
+
         fig.autofmt_xdate(rotation=75)
         plt.minorticks_off()
 
-        saveFigure(fig, base.joinpath(feature))
+        saveFigure(fig, base.joinpath('v2_' + feature))
         plt.close()
+
+
+def attribute_plots(model_path: Path, base: Path):
+    attributes = ['party', 'governing_party', 'gender', 'congress_member']
+    selected_features = ['liwc_Negemo', 'liwc_Posemo', 'liwc_Anger', 'liwc_Sad', 'liwc_Anx', 'liwc_Swear']
+    fig, axs = plt.subplots(figsize=TWO_COL_FIGSIZE, ncols=4)
+    model = pickle.load(model_path.open('rb'))
+
+    ticks = {
+        'gender': ['Male', '', 'Female'],
+        'party': ['Republican', '', 'Democratic'],
+        'congress_member': ['Others', '', 'Congress'],
+        'governing_party': ['Opposition', '', 'Government']
+    }
+    titles = {
+        'gender': 'Gender',
+        'party': 'Party',
+        'congress_member': 'Congress Affiliation',
+        'governing_party': 'Government Affiliation'
+    }
+
+    styles_cpy = {NAMES[key]: val for key, val in STYLES.items()}
+
+    for i, att in enumerate(attributes):
+        ax = axs[i]
+        df = pd.DataFrame(data=None, index=selected_features, columns=['mean', 'low', 'high'])
+
+        for feat in selected_features:
+            summary = pd.read_html(model.rdd_fit[feat].summary().tables[1].as_html(), header=0, index_col=0)[0]
+            lower, upper = summary['[0.025'].loc[att], summary['0.975]'].loc[att]
+            mean = summary['coef'].loc[att]
+            df.loc[feat] = (mean, lower, upper)
+
+        df = df.sort_index(ascending=False)
+
+        for _, r in df.iterrows():
+            name = NAMES[r.name]
+            color = styles_cpy[name]['color']
+            ax.plot((r.low, r.high), (name, name), '|-', color='black', linewidth=3)
+            ax.plot(r['mean'], name, 'o', color=color, markersize=7.5)
+
+        ax.set_xticks([-3, -2, -1, 0, 1])
+        ax.set_xticklabels(['', ''] + ticks[att])
+        ax.tick_params(axis='both', labelsize=FONTSIZE)
+        ax.set_title(titles[att], fontsize=FONTSIZE, fontweight='bold')
+        ax.axvline(x=0, linestyle='dashed', color='black', linewidth=0.5)
+        ax.set_xlim([-3.5, 2])
+        lower, upper = ax.get_ylim()
+        ax.set_ylim(lower - .5, upper + .5)
+
+        if i in (1, 2):
+            ax.set_yticklabels([])
+
+        if i >= 2:
+            ax.yaxis.tick_right()
+
+    saveFigure(fig, base.joinpath('selected_attributes'))
+    plt.close()
 
 
 def main():
@@ -289,7 +360,8 @@ def main():
         'verbosity': verbosity_plots,
         'parties': party_plots,
         'QuotationAggregation_RDD': basic_model_plots,
-        'SpeakerAggregation_RDD': basic_model_plots
+        'SpeakerAggregation_RDD': basic_model_plots,
+        'AttributesAggregation_RDD': attribute_plots
     }
 
     for path in data.iterdir():

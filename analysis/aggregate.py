@@ -165,7 +165,6 @@ def getScoresByGroups(df: DataFrame, groupby: List[str]) -> pd.DataFrame:
             scores[key][col] = sws / cnt
 
     keys = list(scores.keys())
-    # combinations = ['-'.join(comb) for comb in list(itertools.product(map(str, range(2)), repeat=len(groupby)))]
     df = _score_dict_to_pandas(scores, keys, columns)
     df[groupby] = df.index.map(lambda x: list(map(int, x.split('-')))).to_list()
     df.index = df.index.map(_make_date)
@@ -286,6 +285,7 @@ def main():
     spark.sparkContext.setLogLevel('WARN')
     base = Path(args.save)
     base.mkdir(exist_ok=True)
+    # TODO: Why are the coefficients reversed?
 
     df = spark.read.parquet(args.sentiment)
     features = [c for c in df.columns if ('liwc' in c) or ('empath' in c)]
