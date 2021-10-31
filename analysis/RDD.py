@@ -106,7 +106,7 @@ class RDD:
         If no date was present before, it is based on the first day of Quotebank + the time_delta column.
         """
         if 'date' in data.columns:
-            data['date'] = pd.to_datetime(data['date'])
+            data.loc['date'] = pd.to_datetime(data['date'])
             return data
 
         if 'time_delta' not in data.columns:
