@@ -300,8 +300,8 @@ def main():
     # The same standardization values will be used for all
     MEAN = agg[features].mean()
     STD = agg[features].std()
-    pickle.dump(MEAN, base.joinpath('mean.parquet').open('wb'))
-    pickle.dump(STD, base.joinpath('std.parquet').open('wb'))
+    pickle.dump(MEAN, base.joinpath('mean.pickle').open('wb'))
+    pickle.dump(STD, base.joinpath('std.pickle').open('wb'))
     save(_df_postprocessing(agg, features, MEAN, STD), 'QuotationAggregation')
 
     agg = getScoresByGroups(df, ['gender', 'party', 'congress_member'])
