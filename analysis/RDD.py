@@ -289,6 +289,7 @@ class RDD:
 
         # RDD
         linewidth = 3 if kwargs.get('lean') else 5
+        linewidth = kwargs.get('linewidth', linewidth)
         X_rdd, Y_rdd = self._get_rdd_plot_data(feature)
         dates_rdd = [self._get_approx_date(x) for x in X_rdd]
         for i in range(len(dates_rdd) // 2):
@@ -464,7 +465,7 @@ def main():
 
         for prefix, mask in masks.items():
             tmp = data[mask]
-            if prefix in ('_democratic', '_republican'):
+            if prefix in ('_democrats', '_republicans'):
                 tmp = tmp.drop('party', axis=1)
             rdd_results = RDD_statsmodels(tmp)
             lin_reg = linear_regression(tmp)
