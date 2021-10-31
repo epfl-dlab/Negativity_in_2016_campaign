@@ -465,7 +465,7 @@ def main():
         for prefix, mask in masks.items():
             tmp = data[mask]
             if prefix in ('_democratic', '_republican'):
-                tmp.drop('party', axis=1)
+                tmp = tmp.drop('party', axis=1)
             rdd_results = RDD_statsmodels(tmp)
             lin_reg = linear_regression(tmp)
             reg = RDD(tmp, rdd_results, lin_reg)
