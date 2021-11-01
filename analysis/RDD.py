@@ -416,7 +416,7 @@ def linear_regression(data: pd.DataFrame, t='time_delta'):
     """
     A wrapper for a linear regression that takes the same input as the RDD function and returns a similar dictionary
     """
-    language_features = [c for c in data.columns if ('_' in c) and (c != 'time_delta')]  # liwc_X and empath_X
+    language_features = [c for c in data.columns if ('empath' in c) or ('liwc' in c)]  # liwc_X and empath_X
     results = dict()
 
     for feature in language_features:
@@ -452,13 +452,14 @@ def remove_outliers(data: pd.DataFrame, thresh: float, center: bool = True) -> p
     data will be the original, uncentered data.
     """
     tmp = data.copy(deep=True)
+    features = [c for c in data.columns if ('empath' in c) or ('liwc' in c)]
     if center:
         centered = tmp - tmp.mean()
-        mask = centered.applymap(lambda val: abs(val) >= thresh)
+        mask = centered[features].applymap(lambda val: abs(val) >= thresh)
     else:
-        mask = tmp.applymap(lambda val: abs(val) >= thresh)
+        mask = tmp[features].applymap(lambda val: abs(val) >= thresh)
 
-    tmp[mask] = np.nan
+    tmp[features][mask] = np.nan
     return tmp
 
 
