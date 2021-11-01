@@ -11,7 +11,7 @@ import sys
 from typing import Dict, Tuple
 
 sys.path.append(str(Path(__file__).parent.parent))  # Only works when keeping the original repo structure
-from utils.plots import saveFigure, timeLinePlot, ONE_COL_FIGSIZE, TWO_COL_FIGSIZE
+from utils.plots import saveFigure, timeLinePlot, ONE_COL_FIGSIZE, TWO_COL_FIGSIZE, NARROW_TWO_COL_FIGSIZE
 from analysis.RDD import RDD, aicc
 
 # TODO: Outliers
@@ -20,6 +20,7 @@ parser.add_argument('--rdd', help='Folder containing fitted RDDs', required=True
 parser.add_argument('--img', help='Folder to write images to.', required=True)
 
 FONTSIZE = 14
+CORE_FEATURES = ['liwc_Negemo', 'liwc_Posemo', 'liwc_Anger', 'liwc_Sad', 'liwc_Anx', 'liwc_Swear']
 NAMES = {
     'liwc_Negemo': 'Negative Emotions',
     'liwc_Anx':    'Anxiety',
@@ -35,13 +36,13 @@ NAMES = {
     'empath_swearing_terms': 'Swearing (empath)'
 }
 STYLES = {
-    'liwc_Negemo': {'color': 'tab:red', 'linewidth': 4},
-    'liwc_Anx':    {'color': 'darkorange', 'linewidth': 3},
-    'liwc_Anger':  {'color': 'darkorange', 'linewidth': 3},
-    'liwc_Sad':    {'color': 'darkorange', 'linewidth': 3},
-    'liwc_Swear':  {'color': 'black', 'linewidth': 3},
-    'liwc_Posemo': {'color': 'tab:green', 'linewidth': 4},
-    'linreg':      {'color': 'black', 'linewidth': 2, 'linestyle': '-.'}
+    'liwc_Negemo': {'color': 'tab:red', 'linewidth': 3},
+    'liwc_Anx':    {'color': 'darkorange', 'linewidth': 2.5},
+    'liwc_Anger':  {'color': 'darkorange', 'linewidth': 2.5},
+    'liwc_Sad':    {'color': 'darkorange', 'linewidth': 2.5},
+    'liwc_Swear':  {'color': 'black', 'linewidth': 2.5},
+    'liwc_Posemo': {'color': 'tab:green', 'linewidth': 3},
+    'linreg':      {'color': 'black', 'linewidth': 1.5, 'linestyle': '-.'}
 }
 
 
@@ -111,11 +112,10 @@ def basic_model_plots(model_file: Path, base: Path):
         plt.close()
 
     # 2 x 3 Grid
-    selected_features = ['liwc_Negemo', 'liwc_Posemo', 'liwc_Anger', 'liwc_Sad', 'liwc_Anx', 'liwc_Swear']
     fig, axs = plt.subplots(figsize=TWO_COL_FIGSIZE, ncols=3, nrows=2, sharex='all', sharey='all')
     ymin = np.inf
     ymax = - np.inf
-    for i, feature in enumerate(selected_features):
+    for i, feature in enumerate(CORE_FEATURES):
         COL = i % 2
         ROW = i // 2
         ax = axs[COL][ROW]
@@ -224,23 +224,20 @@ def verbosity_plots(folder: Path, base: Path, verbosity_groups: Tuple[int] = (0,
 
     plasma = get_cmap('plasma')
     V_style = {
-        0: {'color': plasma(0.), 'linewidth': 3, 'label': 'Verbose'},
-        1: {'color': plasma(.25), 'linewidth': 3, 'label': '2nd Most Verbose'},
-        2: {'color': plasma(.5), 'linewidth': 3, 'label': '3rd Most Verbose'},
-        3: {'color': plasma(.75), 'linewidth': 3, 'label': 'Unknown'}
+        0: {'color': plasma(0.), 'linewidth': 3, 'label': 'Most verbose quartile'},
+        1: {'color': plasma(.25), 'linewidth': 3, 'label': '2nd most verbose quartile'},
+        2: {'color': plasma(.5), 'linewidth': 3, 'label': '3rd most verbose quartile'},
+        3: {'color': plasma(.75), 'linewidth': 3, 'label': 'Least most verbose quartile'}
     }
 
     lower, upper = (13926.0, 18578.0)  # Hard coded numeric Quotebank Date limits + margin
     for feature in features:
-        fig = plt.figure(figsize=TWO_COL_FIGSIZE)
-        gs = fig.add_gridspec(2, 4)
+        fig, axs = plt.subplots(figsize=NARROW_TWO_COL_FIGSIZE, ncols=4)
         y_min = np.Inf
         y_max = - np.Inf
 
-        axs = []
         for verbosity, model in models.items():
-            ax = fig.add_subplot(gs[0, verbosity])
-            axs.append(ax)
+            ax = axs[verbosity]
             model.plot(feature, ax=ax, annotate=False, visuals=False)
             # Adapt y-limits of the plot to mean
             _, Y = model._get_rdd_plot_data(feature)
@@ -248,37 +245,6 @@ def verbosity_plots(folder: Path, base: Path, verbosity_groups: Tuple[int] = (0,
             y_max = max(y_max, max(Y))
             ax.get_legend().remove()
             ax.set_title(V_style[verbosity]['label'], fontsize=FONTSIZE, fontweight='bold')
-
-        # Last Plot: Only most and least verbose
-        ax = fig.add_subplot(gs[1, :])
-        axs.append(ax)
-        for i in (0, 3):
-            model = models[i]
-            _scatter_only(ax, feature, model, V_style[i]['color'])
-            _rdd_only(ax, feature, model, V_style[i])
-            _conf_only(ax, feature, model, V_style[i]['color'])
-            ax.legend(loc='lower left', ncol=2, fontsize=FONTSIZE)
-
-        title = ',  '.join([
-            f'$r^2_{"{Ver, adj}"}$={models[0].rdd[feature].loc["r2_adj"]:.2f}',
-            f'$r^2_{"{Unk, adj}"}$={models[3].rdd[feature].loc["r2_adj"]:.2f}',
-            r'$\sigma_{Ver}$: ' + f'{models[0].data[feature].std():.2f}',
-            r'$\sigma_{Unk}$: ' + f'{models[3].data[feature].std():.2f}',
-        ])
-        ax.set_title(title, fontsize=FONTSIZE)
-
-        box = '\n'.join([
-            ',  '.join([
-                r'$\alpha_{1, Ver}$: ' + str(models[0].get_table(asPandas=True).loc['Negemo'][r'$\alpha_1$']),
-                r'$\beta_{1, Ver}$: ' + str(models[0].get_table(asPandas=True).loc['Negemo'][r'$\beta_1$'])
-            ]), ',  '.join([
-                r'$\alpha_{1, Unk}$: ' + str(models[3].get_table(asPandas=True).loc['Negemo'][r'$\alpha_1$']),
-                r'$\beta_{1, Unk}$: ' + str(models[3].get_table(asPandas=True).loc['Negemo'][r'$\beta_1$'])
-            ])
-        ])
-        box_props = dict(boxstyle='round', facecolor='white', alpha=1)
-        ax.text(0.975, 0.95, box, transform=ax.transAxes, fontsize=FONTSIZE, multialignment='center',
-                verticalalignment='top', horizontalalignment='right', bbox=box_props)
 
         y_diff = y_max - y_min
         for ax in axs:
@@ -294,8 +260,7 @@ def verbosity_plots(folder: Path, base: Path, verbosity_groups: Tuple[int] = (0,
 
 def attribute_plots(model_path: Path, base: Path):
     attributes = ['party', 'governing_party', 'gender', 'congress_member']
-    selected_features = ['liwc_Negemo', 'liwc_Posemo', 'liwc_Anger', 'liwc_Sad', 'liwc_Anx', 'liwc_Swear']
-    fig, axs = plt.subplots(figsize=TWO_COL_FIGSIZE, ncols=4)
+    fig, axs = plt.subplots(figsize=NARROW_TWO_COL_FIGSIZE, ncols=4)
     model = pickle.load(model_path.open('rb'))
 
     ticks = {
@@ -315,9 +280,9 @@ def attribute_plots(model_path: Path, base: Path):
 
     for i, att in enumerate(attributes):
         ax = axs[i]
-        df = pd.DataFrame(data=None, index=selected_features, columns=['mean', 'low', 'high'])
+        df = pd.DataFrame(data=None, index=CORE_FEATURES, columns=['mean', 'low', 'high'])
 
-        for feat in selected_features:
+        for feat in CORE_FEATURES:
             summary = pd.read_html(model.rdd_fit[feat].summary().tables[1].as_html(), header=0, index_col=0)[0]
             lower, upper = summary['[0.025'].loc[att], summary['0.975]'].loc[att]
             mean = summary['coef'].loc[att]
@@ -331,12 +296,12 @@ def attribute_plots(model_path: Path, base: Path):
             ax.plot((r.low, r.high), (name, name), '|-', color='black', linewidth=3)
             ax.plot(r['mean'], name, 'o', color=color, markersize=7.5)
 
-        ax.set_xticks([-3, -2, -1, 0, 1])
-        ax.set_xticklabels(['', ''] + ticks[att])
+        ax.set_xticks([-1, 0, 1, 2, 3])
+        ax.set_xticklabels(ticks[att] + ['', ''])
         ax.tick_params(axis='both', labelsize=FONTSIZE)
         ax.set_title(titles[att], fontsize=FONTSIZE, fontweight='bold')
         ax.axvline(x=0, linestyle='dashed', color='black', linewidth=0.5)
-        ax.set_xlim([-3.5, 2])
+        ax.set_xlim([-2, 3.5])
         lower, upper = ax.get_ylim()
         ax.set_ylim(lower - .5, upper + .5)
 
