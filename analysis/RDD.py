@@ -436,6 +436,27 @@ def linear_regression(data: pd.DataFrame, t='time_delta'):
     return results
 
 
+def remove_outliers(data: pd.DataFrame, thresh: float, center: bool = True) -> pd.DataFrame:
+    """
+    Takes a dataframe and sets every value, where abs(value) >= threshold to np.nan.
+    Parameters
+    ----------
+    data: Numeric dataframe
+    thresh: Threshold value
+    center: If true, the mean of the data will be subtracted for getting the threshold values. The returned
+    data will be the original, uncentered data.
+    """
+    tmp = data.copy(deep=True)
+    if center:
+        centered = tmp - tmp.mean()
+        mask = centered.applymap(lambda val: abs(val) >= thresh)
+    else:
+        mask = tmp.applymap(lambda val: abs(val) >= thresh)
+
+    tmp[mask] = np.nan
+    return tmp
+
+
 def main():
     args = parser.parse_args()
     data_folder = Path(args.data)
@@ -445,39 +466,45 @@ def main():
     for file in tqdm(list(data_folder.iterdir())):
         if not file.name.endswith('.csv'):
             continue
-        data = pd.read_csv(str(file)).sort_values('time_delta')
+        aggregates = pd.read_csv(str(file)).sort_values('time_delta')
+        outliers_removed = remove_outliers(aggregates, 2)
         fname = file.name.split('.')[0]
 
         masks = dict()
         make_folder = None
-        if 'verbosity' in data.columns:
+        if 'verbosity' in aggregates.columns:
             make_folder = 'verbosity'
-            for verb in data['verbosity'].unique():
-                masks['_verbosity_{}'.format(verb)] = data.verbosity == verb
+            for verb in aggregates['verbosity'].unique():
+                masks['_verbosity_{}'.format(verb)] = aggregates.verbosity == verb
 
-        elif ('party' in data.columns) and not ('gender' in data.columns):  # Party Only split
+        elif ('party' in aggregates.columns) and not ('gender' in aggregates.columns):  # Party Only split
             make_folder = 'parties'
-            masks['_republicans'] = data.party == 0
-            masks['_democrats'] = data.party == 1
+            masks['_republicans'] = aggregates.party == 0
+            masks['_democrats'] = aggregates.party == 1
 
         else:
-            masks = {'': np.ones(len(data), dtype=bool)}  # Default, no mask
+            masks = {'': np.ones(len(aggregates), dtype=bool)}  # Default, no mask
 
-        for prefix, mask in masks.items():
-            tmp = data[mask]
-            if prefix in ('_democrats', '_republicans'):
-                tmp = tmp.drop('party', axis=1)
-            rdd_results = RDD_statsmodels(tmp)
-            lin_reg = linear_regression(tmp)
-            reg = RDD(tmp, rdd_results, lin_reg)
+        for data, kind in zip((aggregates, outliers_removed), ('original', 'outliers')):
+            for prefix, mask in masks.items():
+                tmp = data[mask]
+                if prefix in ('_democrats', '_republicans'):
+                    tmp = tmp.drop('party', axis=1)
+                rdd_results = RDD_statsmodels(tmp)
+                lin_reg = linear_regression(tmp)
+                reg = RDD(tmp, rdd_results, lin_reg)
 
-            save_in = storage_folder
-            if make_folder is not None:
-                save_in = storage_folder.joinpath(make_folder)
-                save_in.mkdir(exist_ok=True)
-            pickle.dump(reg, save_in.joinpath(fname + '_RDD' + prefix + '.pickle').open('wb'))
-            with save_in.joinpath(fname + '_tabular' + prefix + '.tex').open('w') as tab:
-                tab.write(reg.get_table())
+                save_in = storage_folder
+                if make_folder is not None:
+                    save_in = storage_folder.joinpath(make_folder)
+                    save_in.mkdir(exist_ok=True)
+
+                if kind == 'outliers':
+                    prefix += '_outliers'
+
+                pickle.dump(reg, save_in.joinpath(fname + '_RDD' + prefix + '.pickle').open('wb'))
+                with save_in.joinpath(fname + '_tabular' + prefix + '.tex').open('w') as tab:
+                    tab.write(reg.get_table())
 
 
 if __name__ == '__main__':
