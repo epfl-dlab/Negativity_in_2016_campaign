@@ -1,5 +1,6 @@
 # Ignore large files
 **.parquet
+SI/template/
 
 # Figures
 img/

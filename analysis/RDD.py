@@ -206,14 +206,11 @@ class RDD:
         """
         st, data, ss2 = self.rdd_err_summary[feature]
         lower, upper = data[:, 4:6].T
-        splits = self.rdd[feature][self.rdd.index.map(lambda x: 'split' in x)].values
 
-        def find_closest(lst: List, value: Union[int, float]):
-            arr = np.asarray(lst)
-            return int(np.argmin(np.abs(arr - value)))
+        split_delta = self.data.time_delta[self.data.date == KINK].values[0]
+        split_idx = (self.data.time_delta[~self.data[feature].isna()] < split_delta).sum()
 
-        split_indices = np.asarray([find_closest(self.data.time_delta.tolist(), s) for s in splits])
-        return np.split(lower, split_indices), np.split(upper, split_indices)
+        return np.split(lower, [split_idx]), np.split(upper, [split_idx])
 
     def _get_lin_reg_plot_data(self, feature: str) -> Tuple[np.array, np.array]:
         slope = self.lin_reg[feature]['time_delta']
@@ -284,7 +281,8 @@ class RDD:
         color = kwargs.get('color', 'black')
 
         s = 15 if kwargs.get('lean', False) else 30
-        scatter_color = kwargs.get('scatter_color', 'tab:grey') if kwargs.get('lean', False) else 'black'
+        scatter_color = 'tab:grey' if kwargs.get('lean', False) else 'black'  # Default colors
+        scatter_color = kwargs.get('scatter_color', scatter_color)
         timeLinePlot(self.data.date, self.data[feature], ax=ax, snsargs={'s': s, 'color': scatter_color}, kind='scatter')
 
         # RDD
@@ -294,7 +292,7 @@ class RDD:
         dates_rdd = [self._get_approx_date(x) for x in X_rdd]
         for i in range(len(dates_rdd) // 2):
             timeLinePlot([dates_rdd[2 * i], dates_rdd[2 * i + 1]], [Y_rdd[2 * i], Y_rdd[2 * i + 1]], ax=ax,
-                         snsargs={'label': 'RDD' if i == 0 else '', 'color': color, 'linewidth': linewidth},
+                         snsargs={'label': kwargs.get('label', 'RDD') if i == 0 else '', 'color': color, 'linewidth': linewidth},
                          timeDelta='1y')
 
         # RDD Confidence
@@ -309,11 +307,12 @@ class RDD:
                 from_date = to_date
 
         # Linear Regression
-        X_lin, Y_lin = self._get_lin_reg_plot_data(feature)
-        dates_lin = [self._get_approx_date(x) for x in X_lin]
-        timeLinePlot(dates_lin, Y_lin, ax=ax, clean_dates=False,
-                     snsargs={'label': 'Linear Regression', 'color': 'black', 'linewidth': 2, 'linestyle': '-.'},
-                     timeDelta='1y')
+        if kwargs.get('lin_reg', True):
+            X_lin, Y_lin = self._get_lin_reg_plot_data(feature)
+            dates_lin = [self._get_approx_date(x) for x in X_lin]
+            timeLinePlot(dates_lin, Y_lin, ax=ax, clean_dates=False,
+                         snsargs={'label': 'Linear Regression', 'color': 'black', 'linewidth': 2, 'linestyle': '-.'},
+                         timeDelta='1y')
 
         # Performance Annotations
         if kwargs.get('annotate', True):
