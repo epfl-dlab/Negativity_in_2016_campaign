@@ -387,7 +387,12 @@ def RDD_statsmodels(data: pd.DataFrame, t: str = 'time_delta') -> Dict[str, Any]
         if len(speaker_attributes) > 0:
             formula += ' + ' + ' + '.join(speaker_attributes)
 
-        mod = smf.ols(formula=formula, data=tmp, missing='drop')
+        try:
+            mod = smf.ols(formula=formula, data=tmp, missing='drop')
+        except ValueError:
+            print(feature)
+            print(tmp.head(150))
+            sys.exit(100)
         res = mod.fit()
 
         results[feature] = {
