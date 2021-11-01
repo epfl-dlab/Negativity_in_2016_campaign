@@ -459,7 +459,7 @@ def remove_outliers(data: pd.DataFrame, thresh: float, center: bool = True) -> p
     else:
         mask = tmp[features].applymap(lambda val: abs(val) >= thresh)
 
-    tmp[features][mask] = np.nan
+    tmp[mask] = np.nan
     return tmp
 
 
