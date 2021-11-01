@@ -91,42 +91,6 @@ def _score_dict_to_pandas(d: Dict, keys: List[Union[datetime, str]], columns: Li
     return pd.DataFrame.from_dict(for_pandas, orient='index', columns=columns)
 
 
-def getScores(df: DataFrame) -> pd.DataFrame:
-    """
-    Groups scores by year and month and returns quotation-average scores for sentiment features.
-    Parameters
-    ----------
-    df: Spark Dataframe containing sentiment counts.
-    """
-    scores = {}
-    columns = [c for c in df.columns if ('liwc' in c) or ('empath' in c)]
-    iterbar = tqdm(columns)
-
-    for col in iterbar:
-        iterbar.set_description(col)
-        iterbar.update(n=0)
-        counts = df.groupby(['year', 'month', col, 'numTokens']) \
-            .agg(f.count('*').alias('cnt')) \
-            .withColumn('weighted_itf', f.col('cnt') * f.col(col) / f.col('numTokens')) \
-            .withColumn('yyyy-mm', f.concat(f.col('year'), f.lit('-'), f.col('month'))) \
-            .filter(~f.col('yyyy-mm').isin(MISSING_MONTHS)) \
-            .drop('yyyy-mm') \
-            .groupby(['year', 'month']) \
-            .agg(f.sum('cnt').alias('total_cnt'), f.sum('weighted_score').alias('summed_weighted_score')) \
-            .withColumn('score', f.col('summed_weighted_score') / f.col('total_cnt')) \
-            .rdd \
-            .map(lambda r: (r.year, r.month, r.score)).collect()
-
-        for year, month, score in itertools.chain(counts):
-            date = datetime(year, month, 15)
-            if date not in scores:
-                scores[date] = {}
-
-            scores[date][col] = score
-
-    return _score_dict_to_pandas(scores, list(scores.keys()), columns)
-
-
 def getScoresByGroups(df: DataFrame, groupby: List[str]) -> pd.DataFrame:
     """
     Aggregates by the year, month and given groups and returns a dataframe per binary group.
@@ -143,7 +107,8 @@ def getScoresByGroups(df: DataFrame, groupby: List[str]) -> pd.DataFrame:
     for col in iterbar:
         iterbar.set_description(col)
         iterbar.update(n=0)
-        counts = df.groupby([*groupby, col, 'numTokens']) \
+        counts = df.filter(f.col('qid') != 'Q22686') \
+            .groupby([*groupby, col, 'numTokens']) \
             .agg(f.count('*').alias('cnt')) \
             .withColumn('weighted_score', f.col('cnt') * f.col(col) / f.col('numTokens')) \
             .withColumn('yyyy-mm', f.concat(f.col('year'), f.lit('-'), f.col('month'))) \
@@ -301,7 +266,7 @@ def main():
     STD = agg[features].std()
     pickle.dump(MEAN, base.joinpath('mean.pickle').open('wb'))
     pickle.dump(STD, base.joinpath('std.pickle').open('wb'))
-    save(_df_postprocessing(agg, features, MEAN, STD), 'QuotationAggregation')
+    save(_df_postprocessing(agg, features, MEAN, STD), 'QuotationAggregationTrump')
 
     agg = getScoresByGroups(df, ['gender', 'party', 'congress_member'])
     agg = _add_governing_column(agg)
