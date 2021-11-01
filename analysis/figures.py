@@ -14,7 +14,6 @@ sys.path.append(str(Path(__file__).parent.parent))  # Only works when keeping th
 from utils.plots import saveFigure, timeLinePlot, ONE_COL_FIGSIZE, TWO_COL_FIGSIZE, NARROW_TWO_COL_FIGSIZE
 from analysis.RDD import RDD, aicc
 
-# TODO: Outliers
 parser = argparse.ArgumentParser()
 parser.add_argument('--rdd', help='Folder containing fitted RDDs', required=True)
 parser.add_argument('--img', help='Folder to write images to.', required=True)
@@ -138,6 +137,40 @@ def basic_model_plots(model_file: Path, base: Path):
     plt.close()
 
 
+def outlier_plots(model_file: Path, store: Path):
+    """
+    Creates a comparison between "basic" and "outliers removed" for every feature the RDD was fitted on.
+    Parameters
+    ----------
+    model_file: Path to an RDD Model, including outliers. Naming of the non-outlier model must follow project structure.
+    store: Base folder to store results in
+    -------
+
+    """
+    BASE_STYLE = {
+        'color': 'tab:red',
+        'scatter_color': 'tab:red',
+        'annotate': False,
+        'parameters': False,
+        'lin_reg': False,
+        'label': 'Original RDD'
+    }
+
+    outliers = pickle.load(model_file.open('rb'))
+    base_model = pickle.load(model_file.parent.joinpath(re.sub('_outliers', '', model_file.name)).open('rb'))
+    features = [col for col in base_model.data.columns if ('empath' in col) or ('liwc' in col)]
+
+    # Single-Feature Plots
+    for f in sorted(features):
+        fig, ax = base_model.plot(f, **BASE_STYLE)
+        lower, upper = ax.get_ylim()
+        fig, ax = outliers.plot(f, ax=ax, label='Outliers Removed')
+        ax.set_ylim(lower, upper)  # Reset to include outliers
+        ax.legend(fontsize=FONTSIZE - 2, loc='lower left', framealpha=1, fancybox=False, ncol=3)
+        saveFigure(fig, store.joinpath(f))
+        plt.close()
+
+
 def party_plots(folder: Path, base: Path):
     """
     Creates party comparison plots
@@ -150,7 +183,7 @@ def party_plots(folder: Path, base: Path):
         model_name = path.name.split('.')[0]
         return model_name.split('_')[-1]
 
-    model_files = [file for file in folder.iterdir() if file.name.endswith('pickle')]
+    model_files = [file for file in folder.iterdir() if file.name.endswith('pickle') and ('outliers' not in file.name)]
     models = {_get_party_name(p): pickle.load(p.open('rb')) for p in model_files}
     features = [col for col in models['democrats'].data.columns if ('empath' in col) or ('liwc' in col)]
 
@@ -218,7 +251,7 @@ def verbosity_plots(folder: Path, base: Path, verbosity_groups: Tuple[int] = (0,
     def _get_verbosity_number(path: Path) -> int:
         return int(re.search('[0-9]+', path.name)[0])
 
-    model_files = [file for file in folder.iterdir() if file.name.endswith('pickle')]
+    model_files = [file for file in folder.iterdir() if file.name.endswith('pickle') and ('outliers' not in file.name)]
     models = {_get_verbosity_number(p): pickle.load(p.open('rb')) for p in model_files}
     features = [col for col in models[verbosity_groups[0]].data.columns if ('empath' in col) or ('liwc' in col)]
 
@@ -254,7 +287,7 @@ def verbosity_plots(folder: Path, base: Path, verbosity_groups: Tuple[int] = (0,
         fig.autofmt_xdate(rotation=75)
         plt.minorticks_off()
 
-        saveFigure(fig, base.joinpath('v2_' + feature))
+        saveFigure(fig, base.joinpath(feature))
         plt.close()
 
 
@@ -325,7 +358,9 @@ def main():
         'verbosity': verbosity_plots,
         'parties': party_plots,
         'QuotationAggregation_RDD': basic_model_plots,
+        'QuotationAggregation_RDD_outliers': outlier_plots,
         'SpeakerAggregation_RDD': basic_model_plots,
+        'SpeakerAggregation_RDD_outliers': outlier_plots,
         'AttributesAggregation_RDD': attribute_plots
     }
 

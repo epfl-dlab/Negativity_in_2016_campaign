@@ -285,7 +285,6 @@ def main():
     spark.sparkContext.setLogLevel('WARN')
     base = Path(args.save)
     base.mkdir(exist_ok=True)
-    # TODO: Why are the coefficients reversed?
 
     df = spark.read.parquet(args.sentiment)
     features = [c for c in df.columns if ('liwc' in c) or ('empath' in c)]
