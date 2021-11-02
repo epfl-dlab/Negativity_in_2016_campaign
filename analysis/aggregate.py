@@ -23,6 +23,8 @@ TRUMP_ELECTION = datetime(2016, 11, 8)
 parser = argparse.ArgumentParser()
 parser.add_argument('--sentiment', help='Quotations including sentiment counts',  required=True)
 parser.add_argument('--save', help='FOLDER to save data to.',  required=True)
+parser.add_argument('--individuals', help='If provided, will get aggregates for these individuals as well.'
+                                          'Takes any number of QIDs', nargs='+', default=[])
 parser.add_argument('--people', help='Path to people / politicians dataframe.', required=True)
 
 
@@ -97,7 +99,7 @@ def getScoresByGroups(df: DataFrame, groupby: List[str]) -> pd.DataFrame:
     Parameters
     ----------
     df: Spark dataframe containing counts
-    groupby: Binary Variables to group by.
+    groupby: Binary Variables to group by. Takes an empty list in case no grouping is needed.
     """
     scores = {}
     columns = [c for c in df.columns if ('liwc' in c) or ('empath' in c)]
@@ -107,7 +109,7 @@ def getScoresByGroups(df: DataFrame, groupby: List[str]) -> pd.DataFrame:
     for col in iterbar:
         iterbar.set_description(col)
         iterbar.update(n=0)
-        counts = df.filter(f.col('qid') != 'Q22686') \
+        counts = df \
             .groupby([*groupby, col, 'numTokens']) \
             .agg(f.count('*').alias('cnt')) \
             .withColumn('weighted_score', f.col('cnt') * f.col(col) / f.col('numTokens')) \
@@ -281,6 +283,15 @@ def main():
     spark.sparkContext.setLogLevel('ERROR')  # Window Warning is Expected and can be ignored
     agg = getScoresByVerbosity(df)
     save(_df_postprocessing(agg, features, MEAN, STD), 'VerbosityAggregation')
+
+    # TODO: Needs to be tested
+    spark.sparkContext.setLogLevel('WARN')
+    if len(args.individuals) > 0:
+        base.joinpath('Individuals').mkdir(exist_ok=True)
+    for qid in args.individuals:
+        uttered = df.filter(f.col('qid') == 'qid')
+        agg = getScoresByGroups(uttered, [])
+        save(_df_postprocessing(agg, features, MEAN, STD), 'Individuals/{}'.format(qid))
 
 
 if __name__ == '__main__':
