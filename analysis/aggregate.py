@@ -284,12 +284,12 @@ def main():
     agg = getScoresByVerbosity(df)
     save(_df_postprocessing(agg, features, MEAN, STD), 'VerbosityAggregation')
 
-    # TODO: Needs to be tested
     spark.sparkContext.setLogLevel('WARN')
     if len(args.individuals) > 0:
         base.joinpath('Individuals').mkdir(exist_ok=True)
     for qid in args.individuals:
-        uttered = df.filter(f.col('qid') == 'qid')
+        print('\n\nAggregation for qid:', qid)
+        uttered = df.filter(f.col('qid') == qid)
         agg = getScoresByGroups(uttered, [])
         save(_df_postprocessing(agg, features, MEAN, STD), 'Individuals/{}'.format(qid))
 
