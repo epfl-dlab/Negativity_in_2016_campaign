@@ -171,6 +171,18 @@ def outlier_plots(model_file: Path, store: Path):
         plt.close()
 
 
+def individual_plots(folder: Path, base: Path):
+    for file in folder.iterdir():
+        if not file.name.endswith('pickle'):
+            continue
+        clearname = file.name.split('_')[0]
+        if 'outlier' in file.name:
+            # outlier_plots(file, save_in.joinpath(clearname + '_outlier'))
+            pass  # We don't really need that
+        else:
+            basic_model_plots(file, base.joinpath(clearname))
+
+
 def party_plots(folder: Path, base: Path):
     """
     Creates party comparison plots
@@ -361,6 +373,7 @@ def main():
     NAME_2_FUNCTION = {
         'verbosity': verbosity_plots,
         'parties': party_plots,
+        'Individuals': individual_plots,
         'QuotationAggregation_RDD': basic_model_plots,
         'QuotationAggregationTrump_RDD': basic_model_plots,
         'QuotationAggregation_RDD_outliers': outlier_plots,
