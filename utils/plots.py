@@ -167,5 +167,5 @@ def saveFigure(fig: plt.Figure, path: Path, dpi: int = 300, excludeTightLayout: 
         fig.tight_layout(pad=1.1)
 
     base = path.parent
-    base.mkdir(exist_ok=True)
+    base.mkdir(exist_ok=True, parents=True)
     fig.savefig(path, dpi=dpi, bbox_inches='tight')
