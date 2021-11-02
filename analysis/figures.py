@@ -22,13 +22,13 @@ FONTSIZE = 14
 CORE_FEATURES = ['liwc_Negemo', 'liwc_Posemo', 'liwc_Anger', 'liwc_Sad', 'liwc_Anx', 'liwc_Swear']
 NAMES = {
     'liwc_Negemo': 'Negative Emotions',
-    'liwc_Anx':    'Anxiety',
-    'liwc_Anger':  'Anger',
-    'liwc_Sad':    'Sadness',
-    'liwc_Swear':  'Swearing Terms',
+    'liwc_Anx': 'Anxiety',
+    'liwc_Anger': 'Anger',
+    'liwc_Sad': 'Sadness',
+    'liwc_Swear': 'Swearing Terms',
     'liwc_Posemo': 'Positive Emotions',
-    'linreg':      'Linear Regression',
-    'liwc_Certain':'Certainty',
+    'linreg': 'Linear Regression',
+    'liwc_Certain': 'Certainty',
     'liwc_Tentat': 'Tentativeness',
     'empath_negative_emotion': 'Neg. Emotion (empath)',
     'empath_positive_emotion': 'Pos. Emotion (empath)',
@@ -36,12 +36,12 @@ NAMES = {
 }
 STYLES = {
     'liwc_Negemo': {'color': 'tab:red', 'linewidth': 3},
-    'liwc_Anx':    {'color': 'darkorange', 'linewidth': 2.5},
-    'liwc_Anger':  {'color': 'darkorange', 'linewidth': 2.5},
-    'liwc_Sad':    {'color': 'darkorange', 'linewidth': 2.5},
-    'liwc_Swear':  {'color': 'black', 'linewidth': 2.5},
+    'liwc_Anx': {'color': 'darkorange', 'linewidth': 2.5},
+    'liwc_Anger': {'color': 'darkorange', 'linewidth': 2.5},
+    'liwc_Sad': {'color': 'darkorange', 'linewidth': 2.5},
+    'liwc_Swear': {'color': 'black', 'linewidth': 2.5},
     'liwc_Posemo': {'color': 'tab:green', 'linewidth': 3},
-    'linreg':      {'color': 'black', 'linewidth': 1.5, 'linestyle': '-.'}
+    'linreg': {'color': 'black', 'linewidth': 1.5, 'linestyle': '-.'}
 }
 
 
@@ -75,9 +75,9 @@ def _grid_annotate(ax: plt.axis, model: RDD, feature: str, title: str):
     aicc_lin = aicc(model.lin_reg[feature].aic, 2, len(model.data))
 
     fit = ',  '.join([
-        f'$r^2_{"{RDD, adj}"}$={model.rdd[feature].loc["r2_adj"]:.2f}',
-        f'$r^2_{"{lin, adj}"}$={model.lin_reg[feature].loc["r2_adjust"]:.2f}',
-        r'$\Delta_{AICc}$: ' + f'{aicc_lin - aicc_rdd:.2f}'
+        f'$R^2_{"{adj}"}$={model.rdd[feature].loc["r2_adj"]:.2f}',
+        # f'$r^2_{"{lin, adj}"}$={model.lin_reg[feature].loc["r2_adjust"]:.2f}',
+        # r'$\Delta_{AICc}$: ' + f'{aicc_lin - aicc_rdd:.2f}'
     ])
     params = ',  '.join([
         r'$\alpha_1$=' + model.get_table(asPandas=True)[r'$\alpha_1$'].loc[' '.join(feature.split('_')[1:])],
@@ -179,6 +179,7 @@ def party_plots(folder: Path, base: Path):
     folder: Folder that contains verbosity-grouped RDD fits.
     base: Base path to store plots in
     """
+
     def _get_party_name(path: Path) -> str:
         model_name = path.name.split('.')[0]
         return model_name.split('_')[-1]
@@ -224,7 +225,8 @@ def party_plots(folder: Path, base: Path):
                 r'$\alpha_{1, DEM}$: ' + str(models["democrats"].get_table(asPandas=True).loc['Negemo'][r'$\alpha_1$']),
                 r'$\beta_{1, DEM}$: ' + str(models["democrats"].get_table(asPandas=True).loc['Negemo'][r'$\beta_1$'])
             ]), ',  '.join([
-                r'$\alpha_{1, REP}$: ' + str(models["republicans"].get_table(asPandas=True).loc['Negemo'][r'$\alpha_1$']),
+                r'$\alpha_{1, REP}$: ' + str(
+                    models["republicans"].get_table(asPandas=True).loc['Negemo'][r'$\alpha_1$']),
                 r'$\beta_{1, REP}$: ' + str(models["republicans"].get_table(asPandas=True).loc['Negemo'][r'$\beta_1$'])
             ])
         ])
@@ -248,6 +250,7 @@ def verbosity_plots(folder: Path, base: Path, verbosity_groups: Tuple[int] = (0,
     base: Base path to store plots in
     verbosity_groups: Selection of verbosity groups that shall be plotted
     """
+
     def _get_verbosity_number(path: Path) -> int:
         return int(re.search('[0-9]+', path.name)[0])
 
@@ -293,14 +296,13 @@ def verbosity_plots(folder: Path, base: Path, verbosity_groups: Tuple[int] = (0,
 
 def attribute_plots(model_path: Path, base: Path):
     attributes = ['party', 'governing_party', 'gender', 'congress_member']
-    fig, axs = plt.subplots(figsize=NARROW_TWO_COL_FIGSIZE, ncols=4)
     model = pickle.load(model_path.open('rb'))
 
     ticks = {
-        'gender': ['Male', '', 'Female'],
-        'party': ['Republican', '', 'Democratic'],
-        'congress_member': ['Others', '', 'Congress'],
-        'governing_party': ['Opposition', '', 'Government']
+        'gender': ['  Male', 'Female'],
+        'party': ['Republican', 'Democratic'],
+        'congress_member': ['  Others', 'Congress'],
+        'governing_party': ['Opposition', 'Government']
     }
     titles = {
         'gender': 'Gender',
@@ -311,6 +313,7 @@ def attribute_plots(model_path: Path, base: Path):
 
     styles_cpy = {NAMES[key]: val for key, val in STYLES.items()}
 
+    fig, axs = plt.subplots(figsize=NARROW_TWO_COL_FIGSIZE, ncols=4)
     for i, att in enumerate(attributes):
         ax = axs[i]
         df = pd.DataFrame(data=None, index=CORE_FEATURES, columns=['mean', 'low', 'high'])
@@ -330,7 +333,8 @@ def attribute_plots(model_path: Path, base: Path):
             ax.plot(r['mean'], name, 'o', color=color, markersize=7.5)
 
         ax.set_xticks([-1, 0, 1, 2, 3])
-        ax.set_xticklabels(ticks[att] + ['', ''])
+        # ax.set_xticklabels(ticks[att] + ['', ''])
+        ax.set_xlabel('$\sigma$ \n' + r'{}$\leftarrow \qquad \rightarrow${}'.format(*ticks[att]), fontsize=FONTSIZE)
         ax.tick_params(axis='both', labelsize=FONTSIZE)
         ax.set_title(titles[att], fontsize=FONTSIZE, fontweight='bold')
         ax.axvline(x=0, linestyle='dashed', color='black', linewidth=0.5)
@@ -358,6 +362,7 @@ def main():
         'verbosity': verbosity_plots,
         'parties': party_plots,
         'QuotationAggregation_RDD': basic_model_plots,
+        'QuotationAggregationTrump_RDD': basic_model_plots,
         'QuotationAggregation_RDD_outliers': outlier_plots,
         'SpeakerAggregation_RDD': basic_model_plots,
         'SpeakerAggregation_RDD_outliers': outlier_plots,
