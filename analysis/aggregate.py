@@ -15,6 +15,7 @@ from tqdm import tqdm
 
 sys.path.append(str(Path(__file__).parent.parent))  # Only works when keeping the original repo structure
 from preparations.getPolitics import DEMOCRATIC_PARTY, MALE, FEMALE, REPUBLICAN_PARTY
+from analysis.RDD import KINK
 
 MISSING_MONTHS = ['2010-5', '2010-6', '2016-1', '2016-3', '2016-6', '2016-10', '2016-11', '2017-1']
 OBAMA_ELECTION = datetime(2008, 11, 4)
@@ -26,6 +27,10 @@ parser.add_argument('--save', help='FOLDER to save data to.',  required=True)
 parser.add_argument('--individuals', help='If provided, will get aggregates for these individuals as well.'
                                           'Takes any number of QIDs', nargs='+', default=[])
 parser.add_argument('--people', help='Path to people / politicians dataframe.', required=True)
+parser.add_argument('--exclude_top_n', help='If given, will perform an aggregation for each of the top n speakers'
+                                            'excluding that speaker from the data. This enables to analyse the influence'
+                                            'of the indivdual on the score', type=int, required=False)
+parser.add_argument('--top_n_file', help='Requiered for exclude_top_n: CSV file including rank and qid.')
 
 
 def _prep_people(df: DataFrame) -> DataFrame:
@@ -250,6 +255,10 @@ def main():
     args = parser.parse_args()
     spark = SparkSession.builder.getOrCreate()
     spark.sparkContext.setLogLevel('WARN')
+
+    if (args.exclude_top_n is not None) and (args.top_n_file is None):
+        raise argparse.ArgumentError("If exclude_top_n is given, top_n_file must be given, too.")
+
     base = Path(args.save)
     base.mkdir(exist_ok=True)
 
@@ -264,8 +273,10 @@ def main():
     # Basic Quotation Aggregation
     agg = getScoresByGroups(df, [])
     # The same standardization values will be used for all
-    MEAN = agg[features].mean()
-    STD = agg[features].std()
+    # MEAN = agg[features].mean()
+    MEAN = agg[features][agg.date < KINK].mean()
+    # STD = agg[features].std()
+    STD = agg[features][agg.date < KINK].std()
     pickle.dump(MEAN, base.joinpath('mean.pickle').open('wb'))
     pickle.dump(STD, base.joinpath('std.pickle').open('wb'))
     save(_df_postprocessing(agg, features, MEAN, STD), 'QuotationAggregationTrump')
@@ -292,6 +303,15 @@ def main():
         uttered = df.filter(f.col('qid') == qid)
         agg = getScoresByGroups(uttered, [])
         save(_df_postprocessing(agg, features, MEAN, STD), 'Individuals/{}'.format(qid))
+
+    if args.exclude_top_n is not None:
+        rank_file = pd.read_csv(args.top_n_file)
+        for i in range(args.exclude_top_n):
+            rank = i + 1
+            qid = rank_file['QID'][rank_file['Rank'] == rank].values[0]
+            tmp = df.filter(f.col('QID') != qid)
+            getScoresByGroups(tmp, [])
+            save(_df_postprocessing(agg, features, MEAN, STD), 'Without/{}'.format(qid))
 
 
 if __name__ == '__main__':
