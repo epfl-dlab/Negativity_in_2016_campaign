@@ -21,7 +21,7 @@ def main():
         .map(lambda r: (r.qid, r.cnt)) \
         .collect()
 
-    sorted_counts = list(zip(range(len(counts)), sorted(counts, key=lambda x: x[1])))
+    sorted_counts = list(zip(range(len(counts)), sorted(counts, key=lambda x: x[1], reverse=True)))
     df = pd.DataFrame(data=None, index=range(len(sorted_counts)), columns=['QID', 'Rank', 'Unique Quotations'])
     for rank, (qid, uq) in sorted_counts:
         df.iloc[rank] = [qid, rank, uq]
