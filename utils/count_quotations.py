@@ -24,7 +24,7 @@ def main():
     sorted_counts = list(zip(range(len(counts)), sorted(counts, key=lambda x: x[1], reverse=True)))
     df = pd.DataFrame(data=None, index=range(len(sorted_counts)), columns=['QID', 'Rank', 'Unique Quotations'])
     for rank, (qid, uq) in sorted_counts:
-        df.iloc[rank] = [qid, rank, uq]
+        df.iloc[rank] = [qid, rank + 1, uq]  # Start rank at 1
     total = df['Unique Quotations'].sum()
     print('TOTAL:', total)
     df['% of Total'] = (100 * df['Unique Quotations'] / total).map(lambda r: f'{r:.5f}')
