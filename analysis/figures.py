@@ -43,6 +43,21 @@ STYLES = {
     'liwc_Posemo': {'color': 'tab:green', 'linewidth': 3},
     'linreg': {'color': 'black', 'linewidth': 1.5, 'linestyle': '-.'}
 }
+PARTY_STYLES = {
+    'democrats': {'color': 'tab:blue', 'linewidth': 2.5, 'scatter_color': 'tab:blue', 'label': 'Deomcrats'},
+    'republicans': {'color': 'tab:red', 'linewidth': 2.5, 'scatter_color': 'tab:red', 'label': 'Republicans'}
+}
+POLITICIAN_IDS = {
+    'Q76': 'Barack Obama',
+    'Q6294': 'Hillary Clinton',
+    'Q22686': 'Donald Trump',
+    'Q69319': 'John Kasich',
+    'Q221997': 'Jeb Bush',
+    'Q324546': 'Marco Rubio',
+    'Q359442': 'Bernie Sanders ',
+    'Q816459': 'Ben Carson',
+    'Q2036942': 'Ted Cruz'
+}
 
 
 def _conf_only(ax: plt.axis, feature: str, model: RDD, color: str):
@@ -56,6 +71,7 @@ def _conf_only(ax: plt.axis, feature: str, model: RDD, color: str):
 
 def _rdd_only(ax: plt.axis, feature: str, model: RDD, kwargs: Dict):
     kwargs = deepcopy(kwargs)
+    del kwargs['scatter_color']
     X_rdd, Y_rdd = model._get_rdd_plot_data(feature)
     dates_rdd = [model._get_approx_date(x) for x in X_rdd]
     for i in range(len(dates_rdd) // 2):
@@ -80,8 +96,8 @@ def _grid_annotate(ax: plt.axis, model: RDD, feature: str, title: str):
         # r'$\Delta_{AICc}$: ' + f'{aicc_lin - aicc_rdd:.2f}'
     ])
     params = ',  '.join([
-        r'$\alpha_1$=' + model.get_table(asPandas=True)[r'$\alpha_1$'].loc[' '.join(feature.split('_')[1:])],
-        r'$\beta_1$=' + model.get_table(asPandas=True)[r'$\beta_1$'].loc[' '.join(feature.split('_')[1:])]
+        r'$\alpha$=' + model.get_table(asPandas=True)[r'$\alpha$'].loc[' '.join(feature.split('_')[1:])],
+        r'$\beta$=' + model.get_table(asPandas=True)[r'$\beta$'].loc[' '.join(feature.split('_')[1:])]
     ])
     box_props = dict(boxstyle='round', facecolor='white', alpha=1)
 
@@ -91,15 +107,15 @@ def _grid_annotate(ax: plt.axis, model: RDD, feature: str, title: str):
             horizontalalignment='right', bbox=box_props)
 
 
-def basic_model_plots(model_file: Path, base: Path):
+def basic_model_plots(model_file: Path, base: Path, mean_adapt: bool = False):
     """
     Creates a single plot for every feature the RDD was fitted on.
     Parameters
     ----------
     model_file: Path to an RDD Model
     base: Base folder to store results in
+    mean_adapt: If true, will adapt the y limits of the plots to the mean of the data instead of extreme values
     -------
-
     """
     model = pickle.load(model_file.open('rb'))
     features = [col for col in model.data.columns if ('empath' in col) or ('liwc' in col)]
@@ -112,8 +128,7 @@ def basic_model_plots(model_file: Path, base: Path):
 
     # 2 x 3 Grid
     fig, axs = plt.subplots(figsize=TWO_COL_FIGSIZE, ncols=3, nrows=2, sharex='all', sharey='all')
-    ymin = np.inf
-    ymax = - np.inf
+    ymin, ymax = np.inf, -np.inf
     for i, feature in enumerate(CORE_FEATURES):
         COL = i % 2
         ROW = i // 2
@@ -121,15 +136,23 @@ def basic_model_plots(model_file: Path, base: Path):
         model.plot(feature, ax=ax, annotate=False, visuals=False, **STYLES[feature])
         ax.set_xlim(13926.0, 18578.0)
         _grid_annotate(ax, model, feature, NAMES[feature])
-        ymin = min(ymin, min(model.data[feature]))
-        ymax = max(ymax, max(model.data[feature]))
+        if mean_adapt:
+            _, Y = model._get_rdd_plot_data(feature)
+            ymin = min(ymin, min(Y))
+            ymax = max(ymax, max(Y))
+        else:
+            ymin = min(ymin, min(model.data[feature]))
+            ymax = max(ymax, max(model.data[feature]))
 
     ydiff = ymax - ymin
     for row in axs:
         for ax in row:
             ax.tick_params(axis='both', which='major', labelsize=FONTSIZE)
             ax.get_legend().remove()
-            ax.set_ylim(ymin - 0.25 * ydiff, ymax + 0.25 * ydiff)
+            if mean_adapt:
+                ax.set_ylim(ymin - ydiff, ymax + ydiff)
+            else:
+                ax.set_ylim(ymin - 0.25 * ydiff, ymax + 0.25 * ydiff)
 
     fig.autofmt_xdate(rotation=75)
     plt.minorticks_off()
@@ -172,15 +195,24 @@ def outlier_plots(model_file: Path, store: Path):
 
 
 def individual_plots(folder: Path, base: Path):
+    """
+    Creates all feature plots for every feature for every individual RDD in the given folder.
+    Parameters
+    ----------
+    folder: Parent folder, containing RDDs fitted on individual aggregates
+    base: Base folder to store figures in
+    """
+    # TODO: Narrow down y range
     for file in folder.iterdir():
         if not file.name.endswith('pickle'):
             continue
-        clearname = file.name.split('_')[0]
+        qid = file.name.split('_')[0]
+        clearname = POLITICIAN_IDS[qid]
         if 'outlier' in file.name:
             # outlier_plots(file, save_in.joinpath(clearname + '_outlier'))
             pass  # We don't really need that
         else:
-            basic_model_plots(file, base.joinpath(clearname))
+            basic_model_plots(file, base.joinpath(clearname), mean_adapt=True)
 
 
 def party_plots(folder: Path, base: Path):
@@ -200,11 +232,6 @@ def party_plots(folder: Path, base: Path):
     models = {_get_party_name(p): pickle.load(p.open('rb')) for p in model_files}
     features = [col for col in models['democrats'].data.columns if ('empath' in col) or ('liwc' in col)]
 
-    party_styles = {
-        'democrats': {'color': 'tab:blue', 'linewidth': 3, 'label': 'Democrats'},
-        'republicans': {'color': 'tab:red', 'linewidth': 3, 'label': 'Republicans'},
-    }
-
     for feature in features:
         fig, ax = plt.subplots(figsize=ONE_COL_FIGSIZE)
         lower, upper = (13926.0, 18578.0)  # Hard coded numeric Quotebank Date limits + margin
@@ -215,9 +242,9 @@ def party_plots(folder: Path, base: Path):
             # Adapt y-limits of the plot to the scatter values
             y_min = min(y_min, min(model.data[feature]))
             y_max = max(y_max, max(model.data[feature]))
-            _scatter_only(ax, feature, model, party_styles[party]['color'])
-            _rdd_only(ax, feature, model, party_styles[party])
-            _conf_only(ax, feature, model, party_styles[party]['color'])
+            _scatter_only(ax, feature, model, PARTY_STYLES[party]['color'])
+            _rdd_only(ax, feature, model, PARTY_STYLES[party])
+            _conf_only(ax, feature, model, PARTY_STYLES[party]['color'])
 
         y_diff = y_max - y_min
         ax.set_xlim(lower, upper)
@@ -234,12 +261,12 @@ def party_plots(folder: Path, base: Path):
 
         box = '\n'.join([
             ',  '.join([
-                r'$\alpha_{1, DEM}$: ' + str(models["democrats"].get_table(asPandas=True).loc['Negemo'][r'$\alpha_1$']),
-                r'$\beta_{1, DEM}$: ' + str(models["democrats"].get_table(asPandas=True).loc['Negemo'][r'$\beta_1$'])
+                r'$\alpha_{DEM}$: ' + str(models["democrats"].get_table(asPandas=True).loc['Negemo'][r'$\alpha$']),
+                r'$\beta_{DEM}$: ' + str(models["democrats"].get_table(asPandas=True).loc['Negemo'][r'$\beta$'])
             ]), ',  '.join([
-                r'$\alpha_{1, REP}$: ' + str(
-                    models["republicans"].get_table(asPandas=True).loc['Negemo'][r'$\alpha_1$']),
-                r'$\beta_{1, REP}$: ' + str(models["republicans"].get_table(asPandas=True).loc['Negemo'][r'$\beta_1$'])
+                r'$\alpha_{REP}$: ' + str(
+                    models["republicans"].get_table(asPandas=True).loc['Negemo'][r'$\alpha$']),
+                r'$\beta_{REP}$: ' + str(models["republicans"].get_table(asPandas=True).loc['Negemo'][r'$\beta$'])
             ])
         ])
         box_props = dict(boxstyle='round', facecolor='white', alpha=1)
@@ -251,6 +278,33 @@ def party_plots(folder: Path, base: Path):
 
         saveFigure(fig, base.joinpath(feature))
         plt.close()
+
+    # Grid
+    fig, axs = plt.subplots(figsize=TWO_COL_FIGSIZE, ncols=3, nrows=2, sharex='all', sharey='all')
+    ymin = np.inf
+    ymax = - np.inf
+    for party, model in models.items():
+        for i, feature in enumerate(CORE_FEATURES):
+            COL = i % 2
+            ROW = i // 2
+            ax = axs[COL][ROW]
+            ax.set_title(feature, fontsize=FONTSIZE, fontweight='bold')
+            model.plot(feature, ax=ax, annotate=False, lin_reg=False, visuals=False, **PARTY_STYLES[party])
+            ymin = min(ymin, min(model.data[feature]))
+            ymax = max(ymax, max(model.data[feature]))
+
+    ydiff = ymax - ymin
+    for row in axs:
+        for ax in row:
+            ax.legend(fontsize=FONTSIZE, loc='lower left', framealpha=1, fancybox=False, ncol=2)
+            ax.tick_params(axis='both', which='major', labelsize=FONTSIZE)
+            ax.set_ylim(ymin - 0.25 * ydiff, ymax + 0.25 * ydiff)
+            ax.set_xlim(13926.0, 18578.0)
+
+    fig.autofmt_xdate(rotation=75)
+    plt.minorticks_off()
+    saveFigure(fig, base.joinpath('grid'))
+    plt.close()
 
 
 def verbosity_plots(folder: Path, base: Path, verbosity_groups: Tuple[int] = (0, 3)):
@@ -349,6 +403,7 @@ def attribute_plots(model_path: Path, base: Path):
         ax.set_xlabel('$\sigma$ \n' + r'{}$\leftarrow \qquad \rightarrow${}'.format(*ticks[att]), fontsize=FONTSIZE)
         ax.tick_params(axis='both', labelsize=FONTSIZE)
         ax.set_title(titles[att], fontsize=FONTSIZE, fontweight='bold')
+        ax.set_title('abcd'[i] + ')', fontfamily='serif', loc='left', fontsize=FONTSIZE)
         ax.axvline(x=0, linestyle='dashed', color='black', linewidth=0.5)
         ax.set_xlim([-2, 3.5])
         lower, upper = ax.get_ylim()
@@ -371,15 +426,15 @@ def main():
 
     # Map a file or folder name to a plotting utility.
     NAME_2_FUNCTION = {
-        'verbosity': verbosity_plots,
-        'parties': party_plots,
+        # 'verbosity': verbosity_plots,
+        # 'parties': party_plots,
         'Individuals': individual_plots,
-        'QuotationAggregation_RDD': basic_model_plots,
-        'QuotationAggregationTrump_RDD': basic_model_plots,
-        'QuotationAggregation_RDD_outliers': outlier_plots,
-        'SpeakerAggregation_RDD': basic_model_plots,
-        'SpeakerAggregation_RDD_outliers': outlier_plots,
-        'AttributesAggregation_RDD': attribute_plots
+        # 'QuotationAggregation_RDD': basic_model_plots,
+        # 'QuotationAggregationTrump_RDD': basic_model_plots,
+        # 'QuotationAggregation_RDD_outliers': outlier_plots,
+        # 'SpeakerAggregation_RDD': basic_model_plots,
+        # 'SpeakerAggregation_RDD_outliers': outlier_plots,
+        # 'AttributesAggregation_RDD': attribute_plots
     }
 
     for path in data.iterdir():
