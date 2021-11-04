@@ -239,8 +239,8 @@ class RDD:
         for feature in features:
             res = self.rdd_fit[feature]
             summary = pd.read_html(res.summary().tables[1].as_html(), header=0, index_col=0)[0]
-            summary = summary.rename(index={'Intercept': r'$\alpha_0$', 'C(threshold)[T.1]': r'$\alpha_1$',
-                                            'time_delta': r'$\beta_0$', 'C(threshold)[T.1]:time_delta': r'$\beta_1$',
+            summary = summary.rename(index={'Intercept': r'$\alpha_0$', 'C(threshold)[T.1]': r'$\alpha$',
+                                            'time_delta': r'$\beta_0$', 'C(threshold)[T.1]:time_delta': r'$\beta$',
                                             'governing_party': 'governing', 'congress_member': 'congress'},
                                      columns={'P>|t|': 'p-value', '[0.025': 'CI_lower', '0.975]': 'CI_upper'}
                                      )[['coef', 'p-value', 'CI_lower', 'CI_upper']]
@@ -331,9 +331,9 @@ class RDD:
         # Parameter Annotations
         if parameters:
             param_annotation = ', '.join([
-                r'$\alpha_1$=' + self.get_table(asPandas=True)[r'$\alpha_1$'].loc[
+                r'$\alpha$=' + self.get_table(asPandas=True)[r'$\alpha$'].loc[
                     ' '.join(feature.split('_')[1:])],
-                r'$\beta_1$=' + self.get_table(asPandas=True)[r'$\beta_1$'].loc[' '.join(feature.split('_')[1:])]
+                r'$\beta$=' + self.get_table(asPandas=True)[r'$\beta$'].loc[' '.join(feature.split('_')[1:])]
             ])
             # ax.annotate(param_annotation, (1.02, 0), fontsize=FONTSIZE,
             #             xycoords=trans, rotation=90)
