@@ -268,7 +268,9 @@ def main():
     df = df.join(people, on='qid')
 
     def save(_df: pd.DataFrame, name: str):
-        _df.to_csv(base.joinpath(name + '.csv').open('w'))
+        savefile = base.joinpath(name + '.csv')
+        savefile.parent.mkdir(parents=True, exist_ok=True)
+        _df.to_csv(savefile.open('w'))
 
     # Basic Quotation Aggregation
     agg = getScoresByGroups(df, [])
@@ -305,6 +307,7 @@ def main():
         save(_df_postprocessing(agg, features, MEAN, STD), 'Individuals/{}'.format(qid))
 
     if args.exclude_top_n is not None:
+        base.joinpath('Without').mkdir(exist_ok=True)
         rank_file = pd.read_csv(args.top_n_file)
         for i in range(args.exclude_top_n):
             rank = i + 1
