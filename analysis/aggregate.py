@@ -274,9 +274,9 @@ def main():
     agg = getScoresByGroups(df, [])
     # The same standardization values will be used for all
     # MEAN = agg[features].mean()
-    MEAN = agg[features][agg.date < KINK].mean()
+    MEAN = agg[features][agg.index < KINK].mean()
     # STD = agg[features].std()
-    STD = agg[features][agg.date < KINK].std()
+    STD = agg[features][agg.index < KINK].std()
     pickle.dump(MEAN, base.joinpath('mean.pickle').open('wb'))
     pickle.dump(STD, base.joinpath('std.pickle').open('wb'))
     save(_df_postprocessing(agg, features, MEAN, STD), 'QuotationAggregationTrump')
