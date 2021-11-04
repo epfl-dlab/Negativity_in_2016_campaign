@@ -24,9 +24,9 @@ TRUMP_ELECTION = datetime(2016, 11, 8)
 parser = argparse.ArgumentParser()
 parser.add_argument('--sentiment', help='Quotations including sentiment counts',  required=True)
 parser.add_argument('--save', help='FOLDER to save data to.',  required=True)
+parser.add_argument('--people', help='Path to people / politicians dataframe.', required=True)
 parser.add_argument('--individuals', help='If provided, will get aggregates for these individuals as well.'
                                           'Takes any number of QIDs', nargs='+', default=[])
-parser.add_argument('--people', help='Path to people / politicians dataframe.', required=True)
 parser.add_argument('--exclude_top_n', help='If given, will perform an aggregation for each of the top n speakers'
                                             'excluding that speaker from the data. This enables to analyse the influence'
                                             'of the indivdual on the score', type=int, required=False)
@@ -308,6 +308,7 @@ def main():
         rank_file = pd.read_csv(args.top_n_file)
         for i in range(args.exclude_top_n):
             rank = i + 1
+            print('Collecting for quotations for all but rank {}'.format(rank))
             qid = rank_file['QID'][rank_file['Rank'] == rank].values[0]
             tmp = df.filter(f.col('QID') != qid)
             getScoresByGroups(tmp, [])
