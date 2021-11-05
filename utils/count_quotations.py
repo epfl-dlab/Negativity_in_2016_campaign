@@ -31,7 +31,7 @@ def main():
         .withColumn('numAttributed', f.size('speaker')) \
         .groupby('numAttributed') \
         .agg(f.count('*').alias('total')) \
-        .sort('total') \
+        .sort('numAttributed') \
         .rdd.map(lambda r: (r.numAttributed, r.total)).collect()
 
     sorted_counts = list(zip(range(len(counts)), sorted(counts, key=lambda x: x[1], reverse=True)))
@@ -45,7 +45,7 @@ def main():
     with open(args.save_count, 'w') as dump:
         df.to_csv(dump, index=False, header=True)
 
-    attribution_txt = 'Number Attributed: Total'
+    attribution_txt = 'Number Attributed: Total\n'
     for (na, tot) in mutliples:
         attribution_txt += '{}: {}\n'.format(na, tot)
     with open(args.save_attribution, 'w') as dump:
