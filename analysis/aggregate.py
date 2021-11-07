@@ -314,6 +314,7 @@ def main():
             print('Collecting for quotations for all but rank {}'.format(rank))
             qid = rank_file['QID'][rank_file['Rank'] == rank].values[0]
             tmp = df.filter(f.col('QID') != qid)
+            print(tmp.count())
             getScoresByGroups(tmp, [])
             save(_df_postprocessing(agg, features, MEAN, STD), 'Without/{}'.format(qid))
 
