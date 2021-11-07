@@ -1,5 +1,0 @@
-[0] Config.pm:304> INFO - This is Biber 2.14 (beta)
-[0] Config.pm:307> INFO - Logfile is 'PNAS-template-main.blg'
-[64] biber:322> INFO - === Mo Nov  1, 2021, 13:42:38
-[169] Utils.pm:309> ERROR - Cannot find 'PNAS-template-main.bcf'!
-[169] Biber.pm:132> INFO - ERRORS: 1
