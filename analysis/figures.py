@@ -107,7 +107,7 @@ def _grid_annotate(ax: plt.axis, model: RDD, feature: str, title: str):
             horizontalalignment='right', bbox=box_props)
 
 
-def basic_model_plots(model_file: Path, base: Path, mean_adapt: bool = False):
+def basic_model_plots(model_file: Path, base: Path, mean_adapt: bool = False, ylims: Tuple[float, float] = None):
     """
     Creates a single plot for every feature the RDD was fitted on.
     Parameters
@@ -115,6 +115,7 @@ def basic_model_plots(model_file: Path, base: Path, mean_adapt: bool = False):
     model_file: Path to an RDD Model
     base: Base folder to store results in
     mean_adapt: If true, will adapt the y limits of the plots to the mean of the data instead of extreme values
+    ylims: Another way to control the y axis limits: They can be directly provided here.
     -------
     """
     model = pickle.load(model_file.open('rb'))
@@ -153,6 +154,8 @@ def basic_model_plots(model_file: Path, base: Path, mean_adapt: bool = False):
                 ax.set_ylim(ymin - ydiff, ymax + ydiff)
             else:
                 ax.set_ylim(ymin - 0.25 * ydiff, ymax + 0.25 * ydiff)
+            if ylims is not None:
+                ax.set_ylim(ylims[0], ylims[1])
 
     fig.autofmt_xdate(rotation=75)
     plt.minorticks_off()
@@ -212,7 +215,7 @@ def individual_plots(folder: Path, base: Path):
             # outlier_plots(file, save_in.joinpath(clearname + '_outlier'))
             pass  # We don't really need that
         else:
-            basic_model_plots(file, base.joinpath(clearname), mean_adapt=True)
+            basic_model_plots(file, base.joinpath(clearname), ylims=(-10, 20))
 
 
 def party_plots(folder: Path, base: Path):

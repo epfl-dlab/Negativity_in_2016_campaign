@@ -13,18 +13,20 @@ SECTIONS['Speaker Aggregation'] = '',
 SECTIONS['Speaker Aggregation, Excluding Outliers'] = ''
 SECTIONS['Verbosity Quartiles, Speaker Aggregation'] = ''
 SECTIONS['Quotation Aggregation, Split by Parties'] = ''
+SECTIONS['Quotation Aggregation Scores for Individual Politicians'] = ''
 
 
 KIND_CATPIONS = {
     'qa': 'Quotation Aggregation',
     'sa': 'Speaker Aggregation',
     'parties': 'Quotation Aggregation, Seperated for Parties',
-    'verbosity': 'Speaker Aggregation with Speakers Divided in Verbosity Quartiles'
+    'verbosity': 'Speaker Aggregation with Speakers Divided in Verbosity Quartiles',
+    'Individuals': 'Quotation Aggregation Scores for Individual Politicians'
 }
 
 
 def _get_kind(name: str) -> str:
-    if name in ('parties', 'verbosity'):
+    if name in ('parties', 'verbosity', 'Individuals'):
         return name
     elif name.lower().startswith('attributes'):
         return 'attributes'
@@ -41,7 +43,8 @@ def _get_section(kind: str, is_outlier: bool) -> str:
         'qa': 'Quotation Aggregation',
         'sa': 'Speaker Aggregation',
         'parties': 'Quotation Aggregation, Split by Parties',
-        'verbosity': 'Verbosity Quartiles, Speaker Aggregation'
+        'verbosity': 'Verbosity Quartiles, Speaker Aggregation',
+        'Individuals': 'Quotation Aggregation Scores for Individual Politicians'
     }
     section = MAP[kind]
     if is_outlier:
@@ -83,7 +86,10 @@ def plots(plot_dir: Path):
         is_outlier = 'outliers' in folder.name
         txt = ''
 
+        # TODO: Include Individuals
+
         for fig in sorted(folder.iterdir()):
+
             if not fig.name.endswith('.pdf'):
                 continue
 
@@ -107,7 +113,6 @@ def main():
 
     for section_name in SECTIONS.keys():
         SECTIONS[section_name] = r'\section{' + section_name + '}\n\n'
-    SECTIONS[]
 
     plots(SI.parent.joinpath('img'))
 
