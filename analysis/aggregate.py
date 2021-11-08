@@ -281,6 +281,7 @@ def main():
     MEAN = agg[features][agg.index < KINK].mean()
     # STD = agg[features].std()
     STD = agg[features][agg.index < KINK].std()
+    print("New and old lengths:", len(MEAN), len(STD), len(agg))
     pickle.dump(MEAN, base.joinpath('mean.pickle').open('wb'))
     pickle.dump(STD, base.joinpath('std.pickle').open('wb'))
     save(_df_postprocessing(agg, features, MEAN, STD), 'QuotationAggregationTrump')
@@ -317,12 +318,15 @@ def main():
         rank_file = pd.read_csv(args.top_n_file)
         for i in range(args.exclude_top_n):
             rank = i + 1
+            try:
+                qid = rank_file['QID'][rank_file['Rank'] == rank].values[0]
+            except IndexError:
+                print('Rank {} is not available in the given speaker file.'.format(rank))
+                continue  # Might be okay, e.g. if the given rank is very large, it can just serve as an "include all"
             print('Collecting for quotations for all but rank {}'.format(rank))
-            qid = rank_file['QID'][rank_file['Rank'] == rank].values[0]
             tmp = df.filter(f.col('QID') != qid)
-            print(tmp.count())
             getScoresByGroups(tmp, [])
-            save(_df_postprocessing(agg, features, MEAN, STD), 'Without/{}'.format(qid))
+            save(_df_postprocessing(tmp, features, MEAN, STD), 'Without/{}'.format(qid))
 
 
 if __name__ == '__main__':
