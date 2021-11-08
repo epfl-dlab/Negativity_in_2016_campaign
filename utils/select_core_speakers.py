@@ -21,7 +21,7 @@ def main():
 
     df = spark.read.parquet(args.quotations)
     speaker = df \
-        .groupby(['qid', 'month']) \
+        .groupby(['qid', 'year', 'month']) \
         .agg(f.count('*').alias('numQuotations')) \
         .filter(f.col('numQuotations') >= args.monthly_threshold) \
         .groupby(['qid']) \
