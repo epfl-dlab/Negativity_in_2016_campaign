@@ -276,12 +276,12 @@ def main():
 
     # Basic Quotation Aggregation
     agg = getScoresByGroups(df, [])
-    # The same standardization values will be used for all
+    # The same standardization values will be used for all - take mean and std "pre-treatment" (before the primaries)
     # MEAN = agg[features].mean()
-    MEAN = agg[features][agg.index < KINK].mean()
     # STD = agg[features].std()
+    MEAN = agg[features][agg.index < KINK].mean()
     STD = agg[features][agg.index < KINK].std()
-    print("New and old lengths:", len(MEAN), len(STD), len(agg))
+    print("New and old lengths:", len(MEAN), len(agg[features][agg.index < KINK]), len(agg))
     pickle.dump(MEAN, base.joinpath('mean.pickle').open('wb'))
     pickle.dump(STD, base.joinpath('std.pickle').open('wb'))
     save(_df_postprocessing(agg, features, MEAN, STD), 'QuotationAggregationTrump')
