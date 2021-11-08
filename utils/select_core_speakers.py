@@ -27,6 +27,7 @@ def main():
         .groupby(['qid']) \
         .agg(f.count('*').alias('active_months'), f.sum('numQuotations').alias('numQuotations')) \
         .filter(f.col('active_months') >= args.months_covered) \
+        .sort(f.desc('numQuotations')) \
         .rdd \
         .map(lambda x: (x.qid, x.active_months, x.numQuotations)) \
         .collect()
