@@ -33,8 +33,9 @@ def main():
         .map(lambda x: (x.qid, x.active_months, x.numQuotations)) \
         .collect()
 
-    pd_df = pd.DataFrame(data=speaker, columns=['QID', 'active_months', 'num_quotations'])
-    pd_df.to_csv(save, index=True)
+    data = [(i+1, tpl[0], tpl[1], tpl[2]) for i, tpl in enumerate(speaker)]
+    pd_df = pd.DataFrame(data=data, columns=['Rank', 'QID', 'active_months', 'num_quotations'])
+    pd_df.to_csv(save, index=False)
 
 
 if __name__ == '__main__':
