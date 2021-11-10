@@ -39,6 +39,7 @@ def _prep_people(df: DataFrame) -> DataFrame:
     """
     Preprocessing of the speaker / people Dataframe. Maps categories to binary variables.
     Edge Case: People who are listed having 2 genders or being members of 2 parties will be chosen for both.
+    Edge Case: People who are listed having 2 genders or being members of 2 parties will be chosen for both.
     """
     party_map = {REPUBLICAN_PARTY: 0, DEMOCRATIC_PARTY: 1}
     gender_map = {MALE: 0, FEMALE: 1}
@@ -277,14 +278,11 @@ def main():
     # Basic Quotation Aggregation
     agg = getScoresByGroups(df, [])
     # The same standardization values will be used for all - take mean and std "pre-treatment" (before the primaries)
-    # MEAN = agg[features].mean()
-    # STD = agg[features].std()
     MEAN = agg[features][agg.index < KINK].mean()
     STD = agg[features][agg.index < KINK].std()
-    print("New and old means:", MEAN, agg[features].mean())
     pickle.dump(MEAN, base.joinpath('mean.pickle').open('wb'))
     pickle.dump(STD, base.joinpath('std.pickle').open('wb'))
-    save(_df_postprocessing(agg, features, MEAN, STD), 'QuotationAggregationTrump')
+    save(_df_postprocessing(agg, features, MEAN, STD), 'QuotationAggregation')
 
     agg = getScoresByGroups(df, ['gender', 'party', 'congress_member'])
     agg = _add_governing_column(agg)
