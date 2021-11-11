@@ -20,6 +20,7 @@ def main():
              f.countDistinct('quoteID').alias('num_quotes'),
              f.sum('numDomains').alias('total_domains'),
              ) \
+        .sort(['year', 'month']) \
         .toPandas()
 
     stats.to_csv(open(args.save, 'w'))
