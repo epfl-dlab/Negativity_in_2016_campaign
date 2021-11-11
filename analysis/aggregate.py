@@ -323,8 +323,8 @@ def main():
                 continue  # Might be okay, e.g. if the given rank is very large, it can just serve as an "include all"
             print('Collecting for quotations for all but rank {}'.format(rank))
             tmp = df.filter(f.col('QID') != qid)
-            getScoresByGroups(tmp, [])
-            save(_df_postprocessing(tmp, features, MEAN, STD), 'Without/{}'.format(qid))
+            agg = getScoresByGroups(tmp, [])
+            save(_df_postprocessing(agg, features, MEAN, STD), 'Without/{}'.format(qid))
 
 
 if __name__ == '__main__':
