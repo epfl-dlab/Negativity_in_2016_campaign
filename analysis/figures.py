@@ -7,6 +7,7 @@ import pandas as pd
 import pickle
 from pathlib import Path
 import re
+import seaborn as sns
 import sys
 from typing import Dict, Tuple
 
@@ -124,6 +125,8 @@ def basic_model_plots(model_file: Path, base: Path, mean_adapt: bool = False, yl
     # Single-Feature Plots
     for f in sorted(features):
         fig, ax = model.plot(f, parameters=True)
+        if ylims is not None:
+            ax.set_ylim(ylims[0], ylims[1])
         saveFigure(fig, base.joinpath(f))
         plt.close()
 
@@ -134,7 +137,7 @@ def basic_model_plots(model_file: Path, base: Path, mean_adapt: bool = False, yl
         COL = i % 2
         ROW = i // 2
         ax = axs[COL][ROW]
-        model.plot(feature, ax=ax, annotate=False, visuals=False, **STYLES[feature])
+        model.plot(feature, ax=ax, annotate=False, visuals=False, **STYLES[feature], lin_reg=False)
         ax.set_xlim(13926.0, 18578.0)
         _grid_annotate(ax, model, feature, NAMES[feature])
         if mean_adapt:
@@ -205,17 +208,148 @@ def individual_plots(folder: Path, base: Path):
     folder: Parent folder, containing RDDs fitted on individual aggregates
     base: Base folder to store figures in
     """
-    # TODO: Narrow down y range
     for file in folder.iterdir():
         if not file.name.endswith('pickle'):
             continue
         qid = file.name.split('_')[0]
+        if qid not in POLITICIAN_IDS:
+            continue
         clearname = POLITICIAN_IDS[qid]
         if 'outlier' in file.name:
             # outlier_plots(file, save_in.joinpath(clearname + '_outlier'))
             pass  # We don't really need that
         else:
             basic_model_plots(file, base.joinpath(clearname), ylims=(-10, 20))
+
+
+def verbosity_vs_parameter(folder: Path, base: Path, kind: str):
+    """
+    Plots RDD parameters (y-Axis) vs speaker verbosity (x-axis)
+    Parameters
+    ----------
+    folder: RDD models folder
+    base: Img storage folder
+    kind: Either "individual" or "ablation" - changes style adjustments
+
+    """
+    verbosity = folder.parent.parent.joinpath('speaker_counts.csv')
+    assert verbosity.exists(), "To create the scatter plot influence / verbosity, there needs to be a speaker count file."
+    base_model_path = folder.parent.joinpath('QuotationAggregation_RDD.pickle')
+    assert base_model_path.exists(), "To create the scatter plot influence / verbosity, there needs to be a Quotation Aggregation file."
+    base_model = pickle.load(base_model_path.open('rb'))
+
+    def _get_qid(s: str) -> str:
+        return re.search('Q[0-9]+', s)[0]
+    names = list(set([_get_qid(speaker.name) for speaker in folder.iterdir() if 'outlier' not in speaker.name]))
+
+    verbosity_df = pd.read_csv(verbosity)
+    verbosity_df = verbosity_df[verbosity_df.QID.isin(names)]
+    plot_data = {
+        feature: pd.DataFrame(columns=names,
+                              index=['alpha', 'beta', 'verbosity', 'alpha_low', 'alpha_high', 'beta_low', 'beta_high'])
+        for feature in CORE_FEATURES
+    }
+
+    for speaker in folder.iterdir():
+        if not (speaker.name.endswith('.pickle')):
+            continue
+        qid = _get_qid(speaker.name)
+        speaker_data = pickle.load(speaker.open('rb'))
+        # params = speaker_data.rdd
+        for feature in plot_data:
+            summary = pd.read_html(speaker_data.rdd_fit[feature].summary().tables[1].as_html(), header=0, index_col=0)[
+                0]
+            alpha_low, alpha_high = summary['[0.025'].loc['C(threshold)[T.1]'], summary['0.975]'].loc[
+                'C(threshold)[T.1]']
+            beta_low, beta_high = summary['[0.025'].loc['C(threshold)[T.1]:time_delta'], summary['0.975]'].loc[
+                'C(threshold)[T.1]:time_delta']
+            alpha = summary['coef'].loc['C(threshold)[T.1]']
+            beta = summary['coef'].loc['C(threshold)[T.1]:time_delta']
+            plot_data[feature].at['alpha', qid] = alpha
+            plot_data[feature].at['alpha_low', qid] = alpha_low
+            plot_data[feature].at['alpha_high', qid] = alpha_high
+            plot_data[feature].at['beta', qid] = beta
+            plot_data[feature].at['beta_low', qid] = beta_low
+            plot_data[feature].at['beta_high', qid] = beta_high
+            plot_data[feature].at['verbosity', qid] = verbosity_df[verbosity_df.QID == qid]['Unique Quotations'].values[0]
+
+    for param in ('alpha', 'beta'):
+        fig, axs = plt.subplots(figsize=TWO_COL_FIGSIZE, ncols=3, nrows=2, sharex='all', sharey='all')
+        for i, (feature, data) in enumerate(plot_data.items()):
+            ROW = i % 2
+            COL = i // 2
+            ax = axs[ROW][COL]
+            ax.set_xscale('log')
+            if kind == 'individual':
+                ax.axhline(y=0, linestyle='--', color='black', linewidth=0.8)
+            else:
+                key = 'C(threshold)[T.1]' if param == 'alpha' else 'C(threshold)[T.1]:time_delta'
+                baseline = base_model.rdd[feature][key]
+                summary = pd.read_html(base_model.rdd_fit[feature].summary().tables[1].as_html(), header=0, index_col=0)[0]
+                base_low, base_high = summary['[0.025'].loc[key], summary['0.975]'].loc[key]
+                ax.axhline(y=baseline, linestyle='--', color='black')
+                ax.fill_between((min(verbosity_df['Unique Quotations']), max(verbosity_df['Unique Quotations'])),
+                                base_low, base_high, color='grey', alpha=0.3)
+            for qid in data.columns:
+                CI_low, CI_high = data[qid].loc[param + '_low'], data[qid].loc[param + '_high']
+                # Highlight "significant" points where CIs share a sign
+                if kind == 'individual':
+                    color = 'tab:red' if (CI_low * CI_high > 0) else 'grey'
+                else:
+                    color = 'tab:red' if ((baseline - CI_low) * (baseline - CI_high) > 0) else 'grey'
+                ax.plot((data[qid].loc['verbosity'], data[qid].loc['verbosity']), (CI_low, CI_high), '-', color=color,
+                        linewidth=0.3)
+                ax.scatter(x=data[qid].loc['verbosity'], y=data[qid].loc[param], c=color, s=7.5)
+            if kind == 'individual':
+                annot = r'$\left|\{' + rf'\{param}>0' + r'\}' + rf'\right|={(data.loc[param] > 0).sum()}$' + \
+                        r', $\left|\{' + rf'\{param}<0' + r'\}' + rf'\right|={(data.loc[param] < 0).sum()}$'
+                box_props = dict(boxstyle='round', facecolor='white', alpha=1)
+                ax.text(0.975, 0.05, annot, transform=ax.transAxes, fontsize=FONTSIZE, multialignment='center',
+                        verticalalignment='bottom', horizontalalignment='right', bbox=box_props)
+
+            ax.set_title(NAMES[feature], fontsize=FONTSIZE, fontweight='bold')
+            if COL > 0:
+                # ax.set_yticklabels([])
+                ax.tick_params(axis='y', which='both', left=False, right=False)
+            else:
+                ax.set_ylabel(r'$\{}$'.format(param))
+                if (param == 'alpha') and (kind == 'individual'):
+                    ax.set_ylim(-20, 20)
+                    ax.set_yticks([-10, 10])
+                    ax.set_yticklabels(['-10', '10'])
+            if ROW == 0:
+                ax.set_xticklabels([])
+                ax.tick_params(axis='x', which='both', bottom=False)
+            else:
+                ax.set_xlabel('Uttered Quotations')
+        saveFigure(fig, base.joinpath('verbosity_vs_{}'.format(param)))
+        plt.close()
+
+
+def ablation_plots(folder: Path, base: Path):
+    """
+    Generates two kinds of plots: One summarizing ablation plots, showing verbosity vs. the influence of leaving one
+    speaker out on the overall parameters and then an "individual" plot for the newly fitted lines for all speakers
+    that can be mapped to their real world names.
+    Parameters
+    ----------
+    folder: Parent folder, containing RDDs fitted on data from all-but-one-individual each
+    base: Base folder where to store figures in
+    """
+    # individual_plots(folder, base)
+    verbosity_vs_parameter(folder, base, 'ablation')
+
+
+def individuals(folder: Path, base: Path):
+    """
+    Creates all feature plots for every feature for every individual RDD in the given folder.
+    Parameters
+    ----------
+    folder: Parent folder, containing RDDs fitted on individual aggregates
+    base: Base folder to store figures in
+    """
+    individual_plots(folder, base)
+    verbosity_vs_parameter(folder, base, 'individual')
 
 
 def party_plots(folder: Path, base: Path):
@@ -364,27 +498,38 @@ def verbosity_plots(folder: Path, base: Path, verbosity_groups: Tuple[int] = (0,
 
 
 def attribute_plots(model_path: Path, base: Path):
-    attributes = ['party', 'governing_party', 'gender', 'congress_member']
+    attributes = ['party', 'governing_party','gender', 'congress_member',
+                  'C(threshold)[T.1]', 'C(threshold)[T.1]:time_delta']
     model = pickle.load(model_path.open('rb'))
 
     ticks = {
-        'gender': ['  Male', 'Female'],
+        'gender': ['Male', 'Female'],
         'party': ['Republican', 'Democratic'],
-        'congress_member': ['  Others', 'Congress'],
+        'congress_member': ['Others', 'Congress'],
         'governing_party': ['Opposition', 'Government']
     }
     titles = {
         'gender': 'Gender',
         'party': 'Party',
         'congress_member': 'Congress Affiliation',
-        'governing_party': 'Government Affiliation'
+        'governing_party': 'Government Affiliation',
+        'C(threshold)[T.1]': r'$\mathbf{\alpha}$',
+        'C(threshold)[T.1]:time_delta': r'$\mathbf{\beta}$'
     }
 
     styles_cpy = {NAMES[key]: val for key, val in STYLES.items()}
 
-    fig, axs = plt.subplots(figsize=NARROW_TWO_COL_FIGSIZE, ncols=4)
+    ORDER = ['liwc_Posemo', 'liwc_Negemo', 'liwc_Anger', 'liwc_Anx', 'liwc_Sad', 'liwc_Swear']
+
+    def _sort_features(idx: pd.Index) -> pd.Index:
+        srt = sorted(idx.values, key=lambda x: ORDER.index(x))
+        return pd.Index(srt)
+
+    fig, axs = plt.subplots(figsize=TWO_COL_FIGSIZE, ncols=3, nrows=2)
     for i, att in enumerate(attributes):
-        ax = axs[i]
+        ROW = i % 2
+        COL = i // 2
+        ax = axs[ROW][COL]
         df = pd.DataFrame(data=None, index=CORE_FEATURES, columns=['mean', 'low', 'high'])
 
         for feat in CORE_FEATURES:
@@ -393,30 +538,39 @@ def attribute_plots(model_path: Path, base: Path):
             mean = summary['coef'].loc[att]
             df.loc[feat] = (mean, lower, upper)
 
-        df = df.sort_index(ascending=False)
+        df = df.reindex(ORDER[::-1])
 
         for _, r in df.iterrows():
             name = NAMES[r.name]
             color = styles_cpy[name]['color']
-            ax.plot((r.low, r.high), (name, name), '|-', color='black', linewidth=3)
+            ax.plot((r.low, r.high), (name, name), '|-', color='black', linewidth=1.33)
             ax.plot(r['mean'], name, 'o', color=color, markersize=7.5)
 
-        ax.set_xticks([-1, 0, 1, 2, 3])
-        # ax.set_xticklabels(ticks[att] + ['', ''])
-        ax.set_xlabel('$\sigma$ \n' + r'{}$\leftarrow \qquad \rightarrow${}'.format(*ticks[att]), fontsize=FONTSIZE)
+        if 'threshold' not in att:
+            ax.set_xlim([-2, 4.5])
+            ax.set_xticks([-1, 0, 1, 2, 3, 4])
+            ax.text(x=0.05, y=-0.2, s=r'{}$\longleftarrow$'.format(ticks[att][0]), fontsize=FONTSIZE, ha='left', va='bottom', transform=ax.transAxes)
+            ax.text(x=0.95, y=-0.2, s=r'$\longrightarrow${}'.format(ticks[att][1]), fontsize=FONTSIZE, ha='right', va='bottom', transform=ax.transAxes)
+            ax.text(x=0.5, y=-0.2, s='$\mathbf{\sigma}$', fontsize=FONTSIZE, ha='center', va='bottom', transform=ax.transAxes)
+
         ax.tick_params(axis='both', labelsize=FONTSIZE)
         ax.set_title(titles[att], fontsize=FONTSIZE, fontweight='bold')
-        ax.set_title('abcd'[i] + ')', fontfamily='serif', loc='left', fontsize=FONTSIZE)
-        ax.axvline(x=0, linestyle='dashed', color='black', linewidth=0.5)
-        ax.set_xlim([-2, 3.5])
+        ax.set_title('abcdef'[i] + ')', fontfamily='serif', loc='left', fontsize=FONTSIZE)
+        if att != 'C(threshold)[T.1]':
+            ax.axvline(x=0, linestyle='dashed', color='black', linewidth=0.5)
         lower, upper = ax.get_ylim()
         ax.set_ylim(lower - .5, upper + .5)
 
-        if i in (1, 2):
+        if COL == 1:
             ax.set_yticklabels([])
+            ax.tick_params(axis='y', which='both', left=False, right=False)
 
-        if i >= 2:
+        if COL == 2:
             ax.yaxis.tick_right()
+            if ROW == 1:
+                locs, labels = ax.get_xticks(), ax.get_xticklabels()
+                ax.set_xticks(locs[1::2])
+                ax.set_xticklabels([f'{loc:.3f}' for loc in locs[1::2]])
 
     saveFigure(fig, base.joinpath('selected_attributes'))
     plt.close()
@@ -431,7 +585,8 @@ def main():
     NAME_2_FUNCTION = {
         # 'verbosity': verbosity_plots,
         # 'parties': party_plots,
-        'Individuals': individual_plots,
+        'Individuals': individuals,
+        'Without': ablation_plots,
         # 'QuotationAggregation_RDD': basic_model_plots,
         # 'QuotationAggregationTrump_RDD': basic_model_plots,
         # 'QuotationAggregation_RDD_outliers': outlier_plots,

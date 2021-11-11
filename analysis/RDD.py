@@ -19,6 +19,7 @@ from utils.plots import timeLinePlot, ONE_COL_FIGSIZE
 parser = argparse.ArgumentParser()
 parser.add_argument('--data', help='Folder with aggregates', required=True)
 parser.add_argument('--save', help='Folder to save RDD fits to',  required=True)
+parser.add_argument('--fit_outliers', help='If true, will remove outliers and fit an addition RDD', type=bool, default=False)
 
 CM = 1/2.54
 FONTSIZE = 14
@@ -491,6 +492,8 @@ def main():
             masks = {'': np.ones(len(aggregates), dtype=bool)}  # Default, no mask
 
         for data, kind in zip((aggregates, outliers_removed), ('original', 'outliers')):
+            if (kind == 'outliers') and not args.fit_outliers:
+                continue
             for prefix, mask in masks.items():
                 tmp = data[mask]
                 if prefix in ('_democrats', '_republicans'):
