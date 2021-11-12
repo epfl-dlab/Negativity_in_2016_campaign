@@ -17,7 +17,6 @@ parser.add_argument('--config', help='Path to configuration file to select empat
 parser.add_argument('--quotations', help='Path To the quotation file.', required=True)
 parser.add_argument('--liwc', help='Path to your local LIWC copy, as .pickle', required=True)
 parser.add_argument('--save', help='Path where to store the resulting data.', required=True)
-parser.add_argument('--log', help='Path where the write a logfile to.', required=False)
 parser.add_argument('--content_column', help='The strings to analyse', default='quotation')
 
 
@@ -48,7 +47,7 @@ def loadLIWCregex(fpath: str, categories: List[str]) -> Dict[str, str]:
 
 
 def make_liwc_count_udf(liwc: Dict) -> callable:
-    words, patterns = map(list, liwc.items())
+    words, patterns = zip(*liwc.items())
     indices = list(range(words))
 
     @f.udf(ArrayType(IntegerType()))
