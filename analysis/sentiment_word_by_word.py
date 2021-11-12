@@ -4,10 +4,10 @@ from datetime import datetime
 import json
 import pickle
 from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql.types import ArrayType, IntegerType, StringType
 import pyspark.sql.functions as f
 from pyspark.ml.feature import RegexTokenizer, Tokenizer
 import time
-from sentiment import count
 import sys
 from typing import Dict, List
 
@@ -47,6 +47,17 @@ def loadLIWCregex(fpath: str, categories: List[str]) -> Dict[str, str]:
     return ret
 
 
+def make_liwc_count_udf(liwc: Dict) -> callable:
+    words, patterns = map(list, liwc.items())
+    indices = list(range(words))
+
+    @f.udf(ArrayType(IntegerType()))
+    def count(s: StringType()) -> List[int]:
+        return [len(re.findall(ptrn, s)) for ptrn in patterns]
+
+    return count, dict(zip(indices, words))
+
+
 def main():
     args = parser.parse_args()
     spark = SparkSession.builder.getOrCreate()
@@ -63,26 +74,9 @@ def main():
     assert ('year' in keepColumns) and ('month' in keepColumns), 'If year or month is missing, how to repartition?'
 
     # The line that matters:
-    df = count(quotes.select(keepColumns), patterns)
-    df = df.withColumnRenamed('ANALYSIS_CONTENT', args.content_column)
-    df.repartition('year', 'month').write.mode('overwrite').partitionBy('year', 'month').parquet(args.save)
-
-    if args.log is not None:
-        with open(args.log, 'w') as log:
-            log.write('Log for {}\n'.format(datetime.today()))
-            log.write('Wrote to {}\n'.format(args.save))
-            log.write('Extracted for {} Patterns. Took {:.2f}s.\n'.format(len(patterns), time.time() - t0))
-
-            __stdout = sys.stdout
-            try:
-                sys.stdout = log
-                df.printSchema()
-                print('\n\n')
-            finally:
-                sys.stdout = __stdout
-            for cat, words in patterns.items():
-                log.write('Pattern for {}: '.format(cat))
-                log.write(words + '\n\n')
+    udf, mapping = make_liwc_count_udf(patterns)
+    df = quotes.withColumn('counts', udf(f.col(args.content_column)))
+    df.printSchema()
 
 
 if __name__ == '__main__':
