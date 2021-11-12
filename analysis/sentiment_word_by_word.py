@@ -75,7 +75,7 @@ def main():
     # The line that matters:
     udf, mapping = make_liwc_count_udf(patterns)
     df = quotes.withColumn('counts', udf(f.col('ANALYSIS_CONTENT')))
-    counts = df.rdd.fold([0] * len(mapping), lambda a, b: [x + y for x, y in zip(a, b)])
+    counts = df.select('counts').rdd.fold([0] * len(mapping), lambda a, b: [x + y for x, y in zip(a, b)])
     with open(args.save, 'wb') as savefile:
         ret = {
             'counts': counts,
