@@ -48,7 +48,7 @@ def loadLIWCregex(fpath: str, categories: List[str]) -> Dict[str, str]:
 
 def make_liwc_count_udf(liwc: Dict) -> callable:
     words, patterns = zip(*liwc.items())
-    indices = list(range(words))
+    indices = list(range(len(words)))
 
     @f.udf(ArrayType(IntegerType()))
     def count(s: StringType()) -> List[int]:
