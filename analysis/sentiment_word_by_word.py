@@ -6,7 +6,7 @@ import pickle
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.types import ArrayType, IntegerType, StringType
 import pyspark.sql.functions as f
-from pyspark.ml.feature import RegexTokenizer, Tokenizer
+from pyspark.ml.linalg import DenseVector, Vectors, VectorUDT
 import time
 import sys
 from typing import Dict, List
@@ -50,9 +50,9 @@ def make_liwc_count_udf(liwc: Dict) -> callable:
     words, patterns = zip(*liwc.items())
     indices = list(range(len(words)))
 
-    @f.udf(ArrayType(IntegerType()))
-    def count(s: StringType()) -> List[int]:
-        return [len(re.findall(ptrn, s)) for ptrn in patterns]
+    @f.udf(VectorUDT())
+    def count(s: StringType()) -> DenseVector:
+        return Vectors.dense([len(re.findall(ptrn, s)) for ptrn in patterns])
 
     return count, dict(zip(indices, words))
 
