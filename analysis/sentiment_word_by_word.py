@@ -75,7 +75,13 @@ def main():
     # The line that matters:
     udf, mapping = make_liwc_count_udf(patterns)
     df = quotes.withColumn('counts', udf(f.col('ANALYSIS_CONTENT')))
-    df.select(f.sum('counts')).printSchema()
+    counts = df.rdd.fold([0] * len(mapping), lambda a, b: [x + y for x, y in zip(a, b)])
+    with open(args.save, 'wb') as savefile:
+        ret = {
+            'counts': counts,
+            'mapping': mapping
+        }
+        pickle.dump(ret, savefile)
 
 
 if __name__ == '__main__':
