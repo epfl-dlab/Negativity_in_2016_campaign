@@ -75,7 +75,7 @@ def main():
     # The line that matters:
     udf, mapping = make_liwc_count_udf(patterns)
     df = quotes.withColumn('counts', udf(f.col('ANALYSIS_CONTENT')))
-    df.printSchema()
+    df.select(f.sum('counts')).printSchema()
 
 
 if __name__ == '__main__':
