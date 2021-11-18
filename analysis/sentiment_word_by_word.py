@@ -4,13 +4,14 @@ from datetime import datetime
 import json
 import pickle
 from pyspark.sql import DataFrame, SparkSession
-from pyspark.sql.types import ArrayType, IntegerType, StringType
+from pyspark.sql.types import BooleanType, DateType, StringType
 import pyspark.sql.functions as f
 from pyspark.ml.linalg import DenseVector, Vectors, VectorUDT
 import time
 import sys
 from typing import Dict, List
 
+KINK = datetime(2015, 6, 15)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', help='Path to configuration file to select empath and LIWC categories. (.json)', required=True)
@@ -57,6 +58,7 @@ def make_liwc_count_udf(liwc: Dict) -> callable:
     return count, dict(zip(indices, words))
 
 
+
 def main():
     args = parser.parse_args()
     spark = SparkSession.builder.getOrCreate()
@@ -74,11 +76,15 @@ def main():
 
     # The line that matters:
     udf, mapping = make_liwc_count_udf(patterns)
-    df = quotes.withColumn('counts', udf(f.col('ANALYSIS_CONTENT')))
-    counts = df.select('counts').rdd.fold([0] * len(mapping), lambda a, b: [x + y for x, y in zip(a, b)])
+    df = quotes \
+        .withColumn('counts', udf(f.col('ANALYSIS_CONTENT'))) \
+        .withColumn('after_threshold', f.col('date') > KINK)
+    before = df.filter(~f.col('after_threshold')).select('counts').rdd.fold([0] * len(mapping), lambda a, b: [x + y for x, y in zip(a, b)])
+    after = df.filter(f.col('after_threshold')).select('counts').rdd.fold([0] * len(mapping), lambda a, b: [x + y for x, y in zip(a, b)])
     with open(args.save, 'wb') as savefile:
         ret = {
-            'counts': counts,
+            'counts_before': before,
+            'counts_after': after,
             'mapping': mapping
         }
         pickle.dump(ret, savefile)

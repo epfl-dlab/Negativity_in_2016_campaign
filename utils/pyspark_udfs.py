@@ -1,12 +1,8 @@
-import calendar
 from dateutil.parser import parse as parseDate
-import pyspark
-from pyspark.sql import DataFrame
-import pyspark.sql.functions as f
 from pyspark.sql.functions import udf
 from pyspark.sql.types import ArrayType, BooleanType, IntegerType, FloatType, StringType
 from tld import get_tld
-from typing import List, Tuple, Union
+from typing import List, Union
 
 
 @udf(FloatType())
