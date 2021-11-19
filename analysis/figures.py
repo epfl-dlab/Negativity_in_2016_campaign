@@ -1,26 +1,29 @@
 import argparse
 from copy import deepcopy
+from datetime import datetime
 import numpy as np
 from matplotlib.cm import get_cmap
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import pandas as pd
 import pickle
 from pathlib import Path
 import re
-import seaborn as sns
 import sys
 from typing import Dict, Tuple
 
 sys.path.append(str(Path(__file__).parent.parent))  # Only works when keeping the original repo structure
 from utils.plots import saveFigure, timeLinePlot, ONE_COL_FIGSIZE, TWO_COL_FIGSIZE, NARROW_TWO_COL_FIGSIZE
-from analysis.RDD import RDD, aicc
+from analysis.RDD import RDD, aicc, KINK
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--rdd', help='Folder containing fitted RDDs', required=True)
 parser.add_argument('--img', help='Folder to write images to.', required=True)
+parser.add_argument('--SI', help='SI material', required=False)
 
 FONTSIZE = 14
-CORE_FEATURES = ['liwc_Negemo', 'liwc_Posemo', 'liwc_Anger', 'liwc_Sad', 'liwc_Anx', 'liwc_Swear']
+CORE_FEATURES = ['liwc_Negemo', 'liwc_Anger', 'liwc_Anx', 'liwc_Sad']
+LIWC_FEATURES = CORE_FEATURES + ['liwc_Posemo', 'liwc_Swear']
 NAMES = {
     'liwc_Negemo': 'Negative Emotions',
     'liwc_Anx': 'Anxiety',
@@ -130,8 +133,8 @@ def basic_model_plots(model_file: Path, base: Path, mean_adapt: bool = False, yl
         saveFigure(fig, base.joinpath(f))
         plt.close()
 
-    # 2 x 3 Grid
-    fig, axs = plt.subplots(figsize=TWO_COL_FIGSIZE, ncols=3, nrows=2, sharex='all', sharey='all')
+    # 2 x 2 Grid
+    fig, axs = plt.subplots(figsize=TWO_COL_FIGSIZE, ncols=2, nrows=2, sharex='all', sharey='all')
     ymin, ymax = np.inf, -np.inf
     for i, feature in enumerate(CORE_FEATURES):
         COL = i % 2
@@ -162,7 +165,32 @@ def basic_model_plots(model_file: Path, base: Path, mean_adapt: bool = False, yl
 
     fig.autofmt_xdate(rotation=75)
     plt.minorticks_off()
-    saveFigure(fig, base.joinpath('grid'))
+    saveFigure(fig, base.joinpath('negative_grid'))
+    plt.close()
+
+    # 2 x 3 Grid
+    fig, axs = plt.subplots(figsize=TWO_COL_FIGSIZE, ncols=3, nrows=2, sharex='all', sharey='all')
+    ymin, ymax = np.inf, -np.inf
+    for i, feature in enumerate(LIWC_FEATURES):
+        COL = i % 2
+        ROW = i // 2
+        ax = axs[COL][ROW]
+        _scatter_only(ax, feature, model, STYLES[feature]['color'])
+        ax.set_title(NAMES[feature], fontweight='bold', fontsize=FONTSIZE)
+        ymin = min(ymin, min(model.data[feature]))
+        ymax = max(ymax, max(model.data[feature]))
+
+    ydiff = ymax - ymin
+    for row in axs:
+        for ax in row:
+            ax.tick_params(axis='both', which='major', labelsize=FONTSIZE)
+            ax.set_ylim(ymin - 0.25 * ydiff, ymax + 0.25 * ydiff)
+            if ylims is not None:
+                ax.set_ylim(ylims[0], ylims[1])
+
+    fig.autofmt_xdate(rotation=75)
+    plt.minorticks_off()
+    saveFigure(fig, base.joinpath('scatter_grid'))
     plt.close()
 
 
@@ -222,7 +250,7 @@ def individual_plots(folder: Path, base: Path):
             basic_model_plots(file, base.joinpath(clearname), ylims=(-10, 20))
 
 
-def verbosity_vs_parameter(folder: Path, base: Path, kind: str):
+def verbosity_vs_parameter(folder: Path, base: Path, kind: str, alpha_CI: float = 0.05):
     """
     Plots RDD parameters (y-Axis) vs speaker verbosity (x-axis)
     Parameters
@@ -230,7 +258,7 @@ def verbosity_vs_parameter(folder: Path, base: Path, kind: str):
     folder: RDD models folder
     base: Img storage folder
     kind: Either "individual" or "ablation" - changes style adjustments
-
+    alpha: Confidence Interval parameter
     """
     verbosity = folder.parent.parent.joinpath('speaker_counts.csv')
     assert verbosity.exists(), "To create the scatter plot influence / verbosity, there needs to be a speaker count file."
@@ -257,11 +285,11 @@ def verbosity_vs_parameter(folder: Path, base: Path, kind: str):
         speaker_data = pickle.load(speaker.open('rb'))
         # params = speaker_data.rdd
         for feature in plot_data:
-            summary = pd.read_html(speaker_data.rdd_fit[feature].summary().tables[1].as_html(), header=0, index_col=0)[
-                0]
-            alpha_low, alpha_high = summary['[0.025'].loc['C(threshold)[T.1]'], summary['0.975]'].loc[
+            summary = pd.read_html(speaker_data.rdd_fit[feature].summary(alpha=alpha_CI).tables[1].as_html(), header=0, index_col=0)[0]
+            lower_CI, upper_CI = summary.columns[4:6]
+            alpha_low, alpha_high = summary[lower_CI].loc['C(threshold)[T.1]'], summary[upper_CI].loc[
                 'C(threshold)[T.1]']
-            beta_low, beta_high = summary['[0.025'].loc['C(threshold)[T.1]:time_delta'], summary['0.975]'].loc[
+            beta_low, beta_high = summary[lower_CI].loc['C(threshold)[T.1]:time_delta'], summary[upper_CI].loc[
                 'C(threshold)[T.1]:time_delta']
             alpha = summary['coef'].loc['C(threshold)[T.1]']
             beta = summary['coef'].loc['C(threshold)[T.1]:time_delta']
@@ -274,7 +302,7 @@ def verbosity_vs_parameter(folder: Path, base: Path, kind: str):
             plot_data[feature].at['verbosity', qid] = verbosity_df[verbosity_df.QID == qid]['Unique Quotations'].values[0]
 
     for param in ('alpha', 'beta'):
-        fig, axs = plt.subplots(figsize=TWO_COL_FIGSIZE, ncols=3, nrows=2, sharex='all', sharey='all')
+        fig, axs = plt.subplots(figsize=TWO_COL_FIGSIZE, ncols=2, nrows=2, sharex='all', sharey='all')
         for i, (feature, data) in enumerate(plot_data.items()):
             ROW = i % 2
             COL = i // 2
@@ -285,8 +313,8 @@ def verbosity_vs_parameter(folder: Path, base: Path, kind: str):
             else:
                 key = 'C(threshold)[T.1]' if param == 'alpha' else 'C(threshold)[T.1]:time_delta'
                 baseline = base_model.rdd[feature][key]
-                summary = pd.read_html(base_model.rdd_fit[feature].summary().tables[1].as_html(), header=0, index_col=0)[0]
-                base_low, base_high = summary['[0.025'].loc[key], summary['0.975]'].loc[key]
+                summary = pd.read_html(base_model.rdd_fit[feature].summary(alpha=alpha_CI).tables[1].as_html(), header=0, index_col=0)[0]
+                base_low, base_high = summary[lower_CI].loc[key], summary[upper_CI].loc[key]
                 ax.axhline(y=baseline, linestyle='--', color='black')
                 ax.fill_between((min(verbosity_df['Unique Quotations']), max(verbosity_df['Unique Quotations'])),
                                 base_low, base_high, color='grey', alpha=0.3)
@@ -322,6 +350,8 @@ def verbosity_vs_parameter(folder: Path, base: Path, kind: str):
                 ax.tick_params(axis='x', which='both', bottom=False)
             else:
                 ax.set_xlabel('Uttered Quotations')
+        if alpha_CI != 0.05:
+            fig.suptitle('{}% Confidence Intervals'.format(1-alpha_CI), fontweight='bold', fontsize=FONTSIZE + 2)
         saveFigure(fig, base.joinpath('verbosity_vs_{}'.format(param)))
         plt.close()
 
@@ -336,8 +366,8 @@ def ablation_plots(folder: Path, base: Path):
     folder: Parent folder, containing RDDs fitted on data from all-but-one-individual each
     base: Base folder where to store figures in
     """
-    # individual_plots(folder, base)
     verbosity_vs_parameter(folder, base, 'ablation')
+    verbosity_vs_parameter(folder, base, 'ablation', alpha_CI=0.17)
 
 
 def individuals(folder: Path, base: Path):
@@ -417,7 +447,7 @@ def party_plots(folder: Path, base: Path):
         plt.close()
 
     # Grid
-    fig, axs = plt.subplots(figsize=TWO_COL_FIGSIZE, ncols=3, nrows=2, sharex='all', sharey='all')
+    fig, axs = plt.subplots(figsize=TWO_COL_FIGSIZE, ncols=2, nrows=2, sharex='all', sharey='all')
     ymin = np.inf
     ymax = - np.inf
     for party, model in models.items():
@@ -425,7 +455,7 @@ def party_plots(folder: Path, base: Path):
             COL = i % 2
             ROW = i // 2
             ax = axs[COL][ROW]
-            ax.set_title(feature, fontsize=FONTSIZE, fontweight='bold')
+            ax.set_title(NAMES[feature], fontsize=FONTSIZE, fontweight='bold')
             model.plot(feature, ax=ax, annotate=False, lin_reg=False, visuals=False, **PARTY_STYLES[party])
             ymin = min(ymin, min(model.data[feature]))
             ymax = max(ymax, max(model.data[feature]))
@@ -519,11 +549,7 @@ def attribute_plots(model_path: Path, base: Path):
 
     styles_cpy = {NAMES[key]: val for key, val in STYLES.items()}
 
-    ORDER = ['liwc_Posemo', 'liwc_Negemo', 'liwc_Anger', 'liwc_Anx', 'liwc_Sad', 'liwc_Swear']
-
-    def _sort_features(idx: pd.Index) -> pd.Index:
-        srt = sorted(idx.values, key=lambda x: ORDER.index(x))
-        return pd.Index(srt)
+    ORDER = ['liwc_Negemo', 'liwc_Anger', 'liwc_Anx', 'liwc_Sad']
 
     fig, axs = plt.subplots(figsize=TWO_COL_FIGSIZE, ncols=3, nrows=2)
     for i, att in enumerate(attributes):
@@ -576,6 +602,55 @@ def attribute_plots(model_path: Path, base: Path):
     plt.close()
 
 
+def plot_quantities(data_path: Path, base: Path):
+    """
+    Plots some quantitative overview stats.
+    Parameters
+    ----------
+    data_path: csv file
+    base: Image folder
+    """
+    df = pd.read_csv(data_path)
+    df['dt_month'] = df.apply(lambda r: datetime(int(r.year), int(r.month), 15), axis=1)
+    fig, axs = plt.subplots(figsize=TWO_COL_FIGSIZE, nrows=3)
+    for i, col, name in ((0, 'num_speaker', 'Monthly Speakers'), (1, 'num_quotes', 'Unique Monthly Quotations'), (2, 'total_domains', 'Total monthly quotation domains')):
+        fig, ax = timeLinePlot(x=df.dt_month,
+                               y=df[col],
+                               kind='scatter',
+                               title=name,
+                               ax=axs[i])
+
+    saveFigure(fig, base.joinpath('quantities.pdf'))
+
+
+def RDD_kink_performance(data_path: Path, base: Path):
+    """
+    Plots the performance of the RDD, depending on the date of the discontinuity / kink
+    """
+    data = pickle.load(data_path.open('rb'))
+    dates = list(data.keys())
+    fig, ax = plt.subplots(figsize=TWO_COL_FIGSIZE)
+
+    rdd_style = deepcopy(STYLES)
+    rdd_style['liwc_Anx']['linestyle'] = '--'
+    rdd_style['liwc_Anger']['linestyle'] = '-.'
+    rdd_style['liwc_Sad']['linestyle'] = 'dotted'
+
+    for feature in CORE_FEATURES + ['liwc_Posemo', 'liwc_Swear']:
+        timeLinePlot(
+            x=dates,
+            y=[data[dt][feature]['r2_adjust'] for dt in dates],
+            snsargs=dict(label=NAMES[feature], **rdd_style[feature]),
+            ax=ax,
+            includeElections=False
+        )
+
+    ax.axvline(mdates.date2num(KINK), color='black', linestyle='--')
+
+    plt.legend(fontsize=FONTSIZE - 2, loc='upper right', framealpha=1, fancybox=False, ncol=3)
+    saveFigure(fig, base.joinpath('r2_adj'))
+
+
 def main():
     args = parser.parse_args()
     data = Path(args.rdd)
@@ -585,14 +660,16 @@ def main():
     NAME_2_FUNCTION = {
         # 'verbosity': verbosity_plots,
         # 'parties': party_plots,
-        'Individuals': individuals,
-        'Without': ablation_plots,
+        # 'Individuals': individuals,
+        # 'Without': ablation_plots,
+        # 'custom_CI': ablation_plots,
         # 'QuotationAggregation_RDD': basic_model_plots,
         # 'QuotationAggregationTrump_RDD': basic_model_plots,
         # 'QuotationAggregation_RDD_outliers': outlier_plots,
         # 'SpeakerAggregation_RDD': basic_model_plots,
         # 'SpeakerAggregation_RDD_outliers': outlier_plots,
-        # 'AttributesAggregation_RDD': attribute_plots
+        # 'AttributesAggregation_RDD': attribute_plots,
+        'RDD_time_variation': RDD_kink_performance
     }
 
     for path in data.iterdir():
@@ -607,6 +684,14 @@ def main():
         base_folder = img.joinpath(base_name)
         plot = NAME_2_FUNCTION[base_name]
         plot(path, base_folder)
+
+    if args.SI is not None:
+        si_data = Path(args.SI)
+        si_img = img.joinpath('SI')
+        si_img.mkdir(exist_ok=True)
+        quant = si_data.joinpath('quantitative_statisticts.csv')
+        if quant.exists():
+            plot_quantities(quant, si_img)
 
 
 if __name__ == '__main__':
