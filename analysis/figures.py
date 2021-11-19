@@ -36,7 +36,10 @@ NAMES = {
     'liwc_Tentat': 'Tentativeness',
     'empath_negative_emotion': 'Neg. Emotion (empath)',
     'empath_positive_emotion': 'Pos. Emotion (empath)',
-    'empath_swearing_terms': 'Swearing (empath)'
+    'empath_swearing_terms': 'Swearing (empath)',
+    'verbosity_vs_alpha': r'RDD $\alpha$ over verbosity',
+    'verbosity_vs_beta': r'RDD $\beta$ over verbosity',
+    'r2_adj': 'Adjusted $r^2$ score'
 }
 STYLES = {
     'liwc_Negemo': {'color': 'tab:red', 'linewidth': 3},
