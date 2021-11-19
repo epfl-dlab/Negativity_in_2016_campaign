@@ -203,7 +203,7 @@ class RDD:
     def _rdd_confidence(self, feature: str) -> Tuple[List[np.array], List[np.array]]:
         """
         https://stackoverflow.com/questions/17559408/confidence-and-prediction-intervals-with-statsmodels
-        Returns 95% Confidence Intervals for the RDD
+        Returns (default: 95%) Confidence Intervals for the RDD
         """
         st, data, ss2 = self.rdd_err_summary[feature]
         lower, upper = data[:, 4:6].T
@@ -222,9 +222,9 @@ class RDD:
 
         return X, Y
 
-    def get_table(self, features: List[str] = None, CI_features: List[str] = None, asPandas=False) -> str:
+    def get_table(self, features: List[str] = None, CI_features: List[str] = None, asPandas: bool = False, alpha: float = 0.05) -> str:
         """
-        Makes a Latex table from the internal RDD rsults.
+        Makes a Latex table from the internal RDD results.
         Parameters
         ----------
         features: Include only these features. If not given, will be all features the RDD was fitted on.
@@ -402,7 +402,7 @@ def RDD_statsmodels(data: pd.DataFrame, t: str = 'time_delta') -> Dict[str, Any]
             'r2_adjust': res.rsquared_adj,
             'RMSE': (res.ssr / len(tmp)) ** 0.5,
             'SSR': res.ssr,
-            'summary': summary_table(res, alpha=0.05),
+            'summary': summary_table(res),
             'aic': res.aic,
             'res': res
         }
