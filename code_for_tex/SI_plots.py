@@ -14,26 +14,33 @@ SECTIONS['Speaker Aggregation, Excluding Outliers'] = ''
 SECTIONS['Verbosity Quartiles, Speaker Aggregation'] = ''
 SECTIONS['Quotation Aggregation, Split by Parties'] = ''
 SECTIONS['Quotation Aggregation Scores for Individual Politicians'] = ''
-
+SECTIONS['Quotation Aggregation Scores for all but one Speaker'] = ''
+SECTIONS['Influence of the Placement of the Discontinuity on RDD performance'] = ''
 
 KIND_CATPIONS = {
     'qa': 'Quotation Aggregation',
     'sa': 'Speaker Aggregation',
     'parties': 'Quotation Aggregation, Seperated for Parties',
     'verbosity': 'Speaker Aggregation with Speakers Divided in Verbosity Quartiles',
-    'Individuals': 'Quotation Aggregation Scores for Individual Politicians'
+    'individuals': 'Quotation Aggregation Scores for Individual Politicians',
+    'ablation': 'Quotation Aggregation Scores for all but one Speaker',
+    'rddtv': 'Influence of the Placement of the Discontinuity on RDD performance'
 }
 
 
 def _get_kind(name: str) -> str:
-    if name in ('parties', 'verbosity', 'Individuals'):
-        return name
+    if name.lower() in ('parties', 'verbosity', 'individuals', 'without'):
+        return name.lower()
     elif name.lower().startswith('attributes'):
         return 'attributes'
     elif name.lower().startswith('quotationaggregation'):
         return 'qa'
     elif name.lower().startswith('speakeraggregation'):
         return 'sa'
+    elif name.lower() == 'custom_ci':
+        return 'ablation'
+    elif name.lower().startswith('rdd_time'):
+        return 'rddtv'
     else:
         return 'UNK'
 
@@ -44,7 +51,9 @@ def _get_section(kind: str, is_outlier: bool) -> str:
         'sa': 'Speaker Aggregation',
         'parties': 'Quotation Aggregation, Split by Parties',
         'verbosity': 'Verbosity Quartiles, Speaker Aggregation',
-        'Individuals': 'Quotation Aggregation Scores for Individual Politicians'
+        'individuals': 'Quotation Aggregation Scores for Individual Politicians',
+        'ablation': 'Quotation Aggregation Scores for all but one Speaker',
+        'rddtv': 'Influence of the Placement of the Discontinuity on RDD performance'
     }
     section = MAP[kind]
     if is_outlier:
@@ -67,9 +76,10 @@ def get_feature_name(name: str):
 
 
 def make_figure(path: Path, caption: str, label: str) -> str:
-    txt = r'\begin{figure}[h]\centering' + '\n'
-    txt += r'\includegraphics[width =\textwidth]{' + str(path) + '}' + '\n'
-    txt += r'\caption{' + caption + '}\n'
+    label = ''.join(letter for letter in label if (letter not in r'$\\'))
+    txt = r'\begin{figure}[h]\centering' + '\n\t'
+    txt += r'\includegraphics[width =\textwidth]{' + str(path) + '}' + '\n\t'
+    txt += r'\caption{' + caption + '}\n\t'
     txt += r'\label{fig: ' + label + '}' + '\n'
     txt += r'\end{figure}' + '\n\n'
     return txt
@@ -80,18 +90,19 @@ def plots(plot_dir: Path):
 
     for folder in plot_dir.iterdir():
         kind = _get_kind(folder.name)
-        if kind == 'attributes':
+        if kind in ['attributes', 'without']:
             continue  # Not gonna be used
 
         is_outlier = 'outliers' in folder.name
         txt = ''
 
-        # TODO: Include Individuals
-
         for fig in sorted(folder.iterdir()):
 
             if not fig.name.endswith('.pdf'):
                 continue
+
+            if kind in ['individuals', 'ablation']:
+                print('ALARM!')
 
             feature = get_feature_name(fig.name)
             if feature is None:
@@ -112,7 +123,7 @@ def main():
     data = SI.parent.joinpath('data')
 
     for section_name in SECTIONS.keys():
-        SECTIONS[section_name] = r'\section{' + section_name + '}\n\n'
+        SECTIONS[section_name] = r'\subsection{' + section_name + '}\n\n'
 
     plots(SI.parent.joinpath('img'))
 
