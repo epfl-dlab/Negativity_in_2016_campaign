@@ -1,18 +1,24 @@
 \begin{table}[h]\centering
-\begin{adjustbox}{width=\linewidth, center}
 	\begin{tabular}{lllll}
 	\toprule
 	$y_{cat}$ &    $\mu$ & $\sigma$ & Every Nth & $\sigma / \mu$ \\
 	\midrule
-	Negative Emotions &  0.01856 &  0.00089 &      53.9 &          4.8\% \\
-	Anger             &  0.00649 &  0.00054 &     154.0 &          8.2\% \\
-	Anxiety           &  0.00295 &  0.00021 &     339.2 &          7.2\% \\
-	Sadness           &  0.00351 &  0.00015 &     284.7 &          4.2\% \\
+	Positive Emotions     &  0.04053 &  0.00083 &      24.7 &          2.0\% \\
+	Negative Emotions     &  0.01856 &  0.00089 &      53.9 &          4.8\% \\
+	Anxiety               &  0.00295 &  0.00021 &     339.2 &          7.2\% \\
+	Anger                 &  0.00649 &  0.00054 &     154.0 &          8.2\% \\
+	Sadness               &  0.00351 &  0.00015 &     284.7 &          4.2\% \\
+	Swearing Terms        &  0.00043 &  0.00014 &    2310.8 &         33.3\% \\
+	Tentativeness         &  0.02275 &  0.00051 &      44.0 &          2.3\% \\
+	Certainty             &  0.01521 &  0.00029 &      65.8 &          1.9\% \\
+	Swearing (empath)     &  0.00069 &  0.00013 &    1442.4 &         19.1\% \\
+	Science (empath)      &  0.00274 &  0.00021 &     365.6 &          7.6\% \\
+	Neg. Emotion (empath) &  0.00821 &  0.00052 &     121.9 &          6.4\% \\
+	Pos. Emotion (empath) &  0.00804 &  0.00041 &     124.4 &          5.1\% \\
 	\bottomrule
 	\end{tabular}
 	
-\end{adjustbox}
-	\caption{Key Metrics for all Sentiment Attributes}
+\caption{Key Metrics for all Sentiment Attributes}
 	\label{fig: mean_std}
 \end{table}
 
@@ -482,5 +488,89 @@
 \end{adjustbox}
 	\caption{RDD parameters for aggregation on verbosity quartiles, excluding outliers, least verbose quartile of politicians.}
 	\label{fig: Verbosity_8}
+\end{table}
+
+\begin{table}[h]\centering
+\begin{adjustbox}{width=\linewidth, center}
+	\begin{tabular}{lllllllll}
+	\toprule
+	{} &                      Anger &               Anxiety &              Certainty &     Negative Emotions &    Positive Emotions &                Sadness &            Swearing Terms &         Tentativeness \\
+	Top N words          &                            &                       &                        &                       &                      &                        &                           &                       \\
+	\midrule
+	1                    &  \textbf{fight.*?: 7.75\%} &      risk.*?: 10.84\% &           all: 23.51\% &    problem.*?: 4.35\% &         like: 5.70\% &        low.*?: 10.86\% &    \textbf{hell: 17.18\%} &  \textbf{or: 13.51\%} \\
+	2                    &          attack.*?: 4.96\% &     terror.*?: 8.29\% &          every: 6.74\% &       numb.*?: 3.20\% &         good: 4.23\% &        fail.*?: 9.83\% &  \textbf{damn.*?: 8.85\%} &  \textbf{if: 13.40\%} \\
+	3                    &          threat.*?: 4.91\% &       worr.*?: 5.89\% &          never: 5.19\% &      fight.*?: 2.69\% &      well.*?: 2.93\% &           lost: 7.37\% &              heck: 6.73\% &          some: 8.67\% \\
+	4                    &                cut: 4.87\% &    struggl.*?: 5.22\% &        sure.*?: 4.93\% &        low.*?: 2.11\% &        great: 2.71\% &        hurt.*?: 5.22\% &          screw.*?: 6.63\% &           lot: 6.24\% \\
+	5                    &       \textbf{war: 4.83\%} &    pressur.*?: 5.16\% &         always: 4.61\% &           bad: 1.93\% &  importan.*?: 2.47\% &           lose: 5.11\% &           dumb.*?: 6.44\% &           any: 6.20\% \\
+	6                    &          defens.*?: 4.20\% &      doubt.*?: 4.44\% &           must: 3.43\% &       fail.*?: 1.91\% &       better: 2.22\% &        loss.*?: 4.24\% &     \textbf{dick: 6.16\%} &          most: 4.57\% \\
+	7                    &            kill.*?: 4.03\% &      avoid.*?: 4.17\% &     certain.*?: 3.40\% &  difficult.*?: 1.87\% &      support: 2.08\% &  disappoint.*?: 4.13\% &               ass: 4.93\% &  something.*?: 4.13\% \\
+	8                    &           critical: 3.71\% &          fear: 3.51\% &     committ.*?: 3.07\% &      tough.*?: 1.79\% &         care: 2.06\% &       damag.*?: 3.88\% &  \textbf{shit.*?: 4.82\%} &           may: 2.83\% \\
+	9                    &          danger.*?: 3.10\% &       horr.*?: 2.51\% &  everything.*?: 2.98\% &      wrong.*?: 1.77\% &         best: 1.94\% &          alone: 2.88\% &              crap: 3.39\% &     kind (of): 2.35\% \\
+	10                   &          weapon.*?: 2.63\% &  overwhelm.*?: 2.47\% &           ever: 2.94\% &       risk.*?: 1.73\% &      sure.*?: 1.81\% &         losing: 2.61\% &              fuck: 3.05\% &   question.*?: 2.24\% \\
+	11                   &            argu.*?: 2.45\% &   vulnerab.*?: 2.38\% &          clear: 2.81\% &     attack.*?: 1.73\% &  opportun.*?: 1.78\% &   overwhelm.*?: 2.03\% &         fuckin.*?: 2.92\% &      anything: 2.13\% \\
+	12                   &          victim.*?: 2.22\% &        afraid: 2.34\% &           fact: 2.73\% &     threat.*?: 1.71\% &  interest.*?: 1.58\% &    devastat.*?: 2.02\% &              butt: 2.85\% &          hope: 2.04\% \\
+	13                   &          violat.*?: 2.20\% &       craz.*?: 2.34\% &    everybod.*?: 2.09\% &           cut: 1.69\% &    strong.*?: 1.52\% &      defeat.*?: 1.95\% &          bitch.*?: 2.74\% &     possib.*?: 1.91\% \\
+	14                   &           battl.*?: 2.02\% &  uncertain.*?: 2.18\% &     obvious.*?: 1.67\% &           war: 1.68\% &      safe.*?: 1.48\% &           miss: 1.91\% &              darn: 2.68\% &    someone.*?: 1.75\% \\
+	15                   &          offens.*?: 1.99\% &   desperat.*?: 1.98\% &  commitment.*?: 1.64\% &       serious: 1.50\% &     secur.*?: 1.45\% &      traged.*?: 1.90\% &            bloody: 2.28\% &        pretty: 1.67\% \\
+	Total nr Expressions &                        184 &                    91 &                     83 &                   499 &                  408 &                    101 &                        53 &                   156 \\
+	Total Matches        &                    2029989 &                929090 &                4987728 &               5836334 &             13579160 &                1132197 &                    103306 &               7786065 \\
+	\bottomrule
+	\end{tabular}
+	
+\end{adjustbox}
+	\caption{The most common 15 words for each sentiment category, before 15 June 2015. Bold values deviate from the other period by more than one percentage point.}
+	\label{fig: before_1}
+\end{table}
+
+\begin{table}[h]\centering
+\begin{adjustbox}{width=\linewidth, center}
+	\begin{tabular}{lllllllll}
+	\toprule
+	{} &                       Anger &               Anxiety &              Certainty &     Negative Emotions &    Positive Emotions &                Sadness &             Swearing Terms &         Tentativeness \\
+	Top N words          &                             &                       &                        &                       &                      &                        &                            &                       \\
+	\midrule
+	1                    &   \textbf{fight.*?: 9.20\%} &      risk.*?: 10.83\% &           all: 23.19\% &    problem.*?: 3.80\% &         like: 5.97\% &        low.*?: 11.06\% &     \textbf{hell: 24.15\%} &  \textbf{or: 15.01\%} \\
+	2                    &           threat.*?: 5.71\% &     terror.*?: 8.87\% &          every: 6.80\% &      fight.*?: 3.38\% &         good: 4.05\% &        fail.*?: 9.02\% &  \textbf{damn.*?: 11.46\%} &   \textbf{if: 9.70\%} \\
+	3                    &           attack.*?: 5.41\% &       worr.*?: 5.50\% &          never: 5.45\% &       numb.*?: 3.03\% &        great: 2.96\% &           lost: 6.90\% &            dumb.*?: 7.11\% &          some: 8.41\% \\
+	4                    &            critical: 3.90\% &    pressur.*?: 4.95\% &        sure.*?: 5.26\% &     threat.*?: 2.10\% &  importan.*?: 2.68\% &        hurt.*?: 5.40\% &           screw.*?: 6.68\% &           lot: 6.99\% \\
+	5                    &  \textbf{danger.*?: 3.80\%} &    struggl.*?: 4.27\% &         always: 4.64\% &        low.*?: 2.05\% &      well.*?: 2.68\% &           lose: 4.96\% &               heck: 6.10\% &           any: 6.50\% \\
+	6                    &             kill.*?: 3.60\% &       horr.*?: 4.26\% &           must: 3.76\% &     attack.*?: 1.99\% &       better: 2.30\% &       damag.*?: 4.21\% &   \textbf{shit.*?: 4.70\%} &  something.*?: 4.86\% \\
+	7                    &                 war: 3.59\% &          fear: 4.02\% &     certain.*?: 3.28\% &           bad: 1.95\% &      support: 2.25\% &        loss.*?: 3.79\% &                ass: 4.48\% &          most: 4.66\% \\
+	8                    &           defens.*?: 2.94\% &      doubt.*?: 3.91\% &           ever: 3.27\% &       risk.*?: 1.78\% &      sure.*?: 2.02\% &  disappoint.*?: 3.72\% &      \textbf{crap: 3.42\%} &           may: 2.69\% \\
+	9                    &           weapon.*?: 2.81\% &   vulnerab.*?: 3.42\% &          clear: 3.00\% &      wrong.*?: 1.77\% &      safe.*?: 2.02\% &          alone: 2.90\% &               darn: 2.75\% &   question.*?: 2.50\% \\
+	10                   &                 cut: 2.80\% &      avoid.*?: 3.21\% &  everything.*?: 2.91\% &       fail.*?: 1.67\% &         best: 1.94\% &    devastat.*?: 2.58\% &          fuckin.*?: 2.49\% &     kind (of): 2.47\% \\
+	11                   &           victim.*?: 2.74\% &       craz.*?: 2.55\% &     committ.*?: 2.84\% &     terror.*?: 1.46\% &         care: 1.90\% &      traged.*?: 2.33\% &           bitch.*?: 2.46\% &          hope: 2.23\% \\
+	12                   &            abuse.*?: 2.41\% &  overwhelm.*?: 2.38\% &           fact: 2.69\% &  difficult.*?: 1.43\% &  opportun.*?: 1.89\% &         losing: 2.32\% &            piss.*?: 2.41\% &      anything: 2.20\% \\
+	13                   &           violat.*?: 2.27\% &        afraid: 2.34\% &    everybod.*?: 1.83\% &      critical: 1.43\% &    strong.*?: 1.64\% &      defeat.*?: 2.30\% &               butt: 2.39\% &     possib.*?: 2.09\% \\
+	14                   &                hate: 1.94\% &      shame.*?: 1.95\% &      entire.*?: 1.71\% &      tough.*?: 1.43\% &     secur.*?: 1.48\% &            sad: 2.19\% &             bloody: 2.17\% &    someone.*?: 1.89\% \\
+	15                   &             argu.*?: 1.87\% &        shy.*?: 1.87\% &  commitment.*?: 1.61\% &     danger.*?: 1.39\% &  interest.*?: 1.44\% &   overwhelm.*?: 2.11\% &               suck: 2.17\% &      probably: 1.63\% \\
+	Total nr Expressions &                         184 &                    91 &                     83 &                   499 &                  408 &                    101 &                         53 &                   156 \\
+	Total Matches        &                     1373636 &                615580 &                3187841 &               3740676 &              8275450 &                 692956 &                      53915 &               4404308 \\
+	\bottomrule
+	\end{tabular}
+	
+\end{adjustbox}
+	\caption{The most common 15 words for each sentiment category, after 15 June 2015. Bold values deviate from the other period by more than one percentage point.}
+	\label{fig: after_1}
+\end{table}
+
+\begin{table}[h]\centering
+	\begin{tabular}{lr}
+	\toprule
+	{} &  KL Divergence \\
+	\midrule
+	Anger             &       0.036965 \\
+	Anxiety           &       0.025344 \\
+	Certainty         &       0.004131 \\
+	Negative Emotions &       0.026467 \\
+	Positive Emotions &       0.013651 \\
+	Sadness           &       0.014523 \\
+	Swearing Terms    &       0.140172 \\
+	Tentativeness     &       0.010683 \\
+	\bottomrule
+	\end{tabular}
+	
+\caption{Kullback-Leibler Divergence for the word distribution within the Categories, before and after 15 June 2015.}
+	\label{fig: Kullback_1}
 \end{table}
 
