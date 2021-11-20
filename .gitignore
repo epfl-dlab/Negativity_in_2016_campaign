@@ -2,6 +2,17 @@
 **.parquet
 SI/template/
 
+# Custom tex settings and tex files
+SI/settings.tex
+**.aux
+**.bbl
+**.bcf
+**.blg
+SI/SI.log
+**.run.xml
+**.synctex.gz
+**.toc
+
 # Figures
 img/
 
