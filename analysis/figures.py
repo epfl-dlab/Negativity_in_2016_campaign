@@ -36,6 +36,7 @@ NAMES = {
     'liwc_Tentat': 'Tentativeness',
     'empath_negative_emotion': 'Neg. Emotion (empath)',
     'empath_positive_emotion': 'Pos. Emotion (empath)',
+    'empath_science': 'Science (empath)',
     'empath_swearing_terms': 'Swearing (empath)',
     'verbosity_vs_alpha': r'RDD $\alpha$ over verbosity',
     'verbosity_vs_beta': r'RDD $\beta$ over verbosity',
@@ -87,8 +88,8 @@ def _rdd_only(ax: plt.axis, feature: str, model: RDD, kwargs: Dict):
         timeLinePlot([dates_rdd[2 * i], dates_rdd[2 * i + 1]], [Y_rdd[2 * i], Y_rdd[2 * i + 1]], ax=ax, snsargs=kwargs)
 
 
-def _scatter_only(ax: plt.axis, feature: str, model: RDD, color: str):
-    timeLinePlot(model.data.date, model.data[feature], ax=ax, snsargs={'s': 25, 'color': color}, kind='scatter')
+def _scatter_only(ax: plt.axis, feature: str, model: RDD, color: str, s: int = 25):
+    timeLinePlot(model.data.date, model.data[feature], ax=ax, snsargs={'s': s, 'color': color}, kind='scatter')
 
 
 def _grid_annotate(ax: plt.axis, model: RDD, feature: str, title: str):
@@ -178,7 +179,7 @@ def basic_model_plots(model_file: Path, base: Path, mean_adapt: bool = False, yl
         COL = i % 2
         ROW = i // 2
         ax = axs[COL][ROW]
-        _scatter_only(ax, feature, model, STYLES[feature]['color'])
+        _scatter_only(ax, feature, model, 'black')
         ax.set_title(NAMES[feature], fontweight='bold', fontsize=FONTSIZE)
         ymin = min(ymin, min(model.data[feature]))
         ymax = max(ymax, max(model.data[feature]))
@@ -327,7 +328,7 @@ def verbosity_vs_parameter(folder: Path, base: Path, kind: str, alpha_CI: float 
                 if kind == 'individual':
                     color = 'tab:red' if (CI_low * CI_high > 0) else 'grey'
                 else:
-                    color = 'tab:red' if ((baseline - CI_low) * (baseline - CI_high) > 0) else 'grey'
+                    color = 'tab:red' if (base_low > CI_high) else 'grey'
                 ax.plot((data[qid].loc['verbosity'], data[qid].loc['verbosity']), (CI_low, CI_high), '-', color=color,
                         linewidth=0.3)
                 ax.scatter(x=data[qid].loc['verbosity'], y=data[qid].loc[param], c=color, s=7.5)
@@ -354,7 +355,7 @@ def verbosity_vs_parameter(folder: Path, base: Path, kind: str, alpha_CI: float 
             else:
                 ax.set_xlabel('Uttered Quotations')
         if alpha_CI != 0.05:
-            fig.suptitle('{}% Confidence Intervals'.format(1-alpha_CI), fontweight='bold', fontsize=FONTSIZE + 2)
+            fig.suptitle('{:.2f}% Confidence Intervals'.format(1-alpha_CI), fontweight='bold', fontsize=FONTSIZE + 2)
         saveFigure(fig, base.joinpath('verbosity_vs_{}'.format(param)))
         plt.close()
 
@@ -369,7 +370,6 @@ def ablation_plots(folder: Path, base: Path):
     folder: Parent folder, containing RDDs fitted on data from all-but-one-individual each
     base: Base folder where to store figures in
     """
-    verbosity_vs_parameter(folder, base, 'ablation')
     verbosity_vs_parameter(folder, base, 'ablation', alpha_CI=0.17)
 
 
@@ -412,7 +412,7 @@ def party_plots(folder: Path, base: Path):
             # Adapt y-limits of the plot to the scatter values
             y_min = min(y_min, min(model.data[feature]))
             y_max = max(y_max, max(model.data[feature]))
-            _scatter_only(ax, feature, model, PARTY_STYLES[party]['color'])
+            _scatter_only(ax, feature, model, PARTY_STYLES[party]['color'], s=40)
             _rdd_only(ax, feature, model, PARTY_STYLES[party])
             _conf_only(ax, feature, model, PARTY_STYLES[party]['color'])
 
@@ -473,7 +473,7 @@ def party_plots(folder: Path, base: Path):
 
     fig.autofmt_xdate(rotation=75)
     plt.minorticks_off()
-    saveFigure(fig, base.joinpath('grid'))
+    saveFigure(fig, base.joinpath('negative_grid'))
     plt.close()
 
 
@@ -661,17 +661,16 @@ def main():
 
     # Map a file or folder name to a plotting utility.
     NAME_2_FUNCTION = {
-        # 'verbosity': verbosity_plots,
-        # 'parties': party_plots,
-        # 'Individuals': individuals,
-        # 'Without': ablation_plots,
-        # 'custom_CI': ablation_plots,
-        # 'QuotationAggregation_RDD': basic_model_plots,
-        # 'QuotationAggregationTrump_RDD': basic_model_plots,
-        # 'QuotationAggregation_RDD_outliers': outlier_plots,
-        # 'SpeakerAggregation_RDD': basic_model_plots,
-        # 'SpeakerAggregation_RDD_outliers': outlier_plots,
-        # 'AttributesAggregation_RDD': attribute_plots,
+        'verbosity': verbosity_plots,
+        'parties': party_plots,
+        'Individuals': individuals,
+        'Without': ablation_plots,
+        'QuotationAggregation_RDD': basic_model_plots,
+        'QuotationAggregationTrump_RDD': basic_model_plots,
+        'QuotationAggregation_RDD_outliers': outlier_plots,
+        'SpeakerAggregation_RDD': basic_model_plots,
+        'SpeakerAggregation_RDD_outliers': outlier_plots,
+        'AttributesAggregation_RDD': attribute_plots,
         'RDD_time_variation': RDD_kink_performance
     }
 

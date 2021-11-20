@@ -29,7 +29,7 @@ KIND_CATPIONS = {
 
 
 def _get_kind(name: str) -> str:
-    if name.lower() in ('parties', 'verbosity', 'individuals', 'without'):
+    if name.lower() in ('parties', 'verbosity', 'individuals'):
         return name.lower()
     elif name.lower().startswith('attributes'):
         return 'attributes'
@@ -37,12 +37,12 @@ def _get_kind(name: str) -> str:
         return 'qa'
     elif name.lower().startswith('speakeraggregation'):
         return 'sa'
-    elif name.lower() == 'custom_ci':
+    elif name.lower() == 'without':
         return 'ablation'
     elif name.lower().startswith('rdd_time'):
         return 'rddtv'
     else:
-        return 'UNK'
+        return name
 
 
 def _get_section(kind: str, is_outlier: bool) -> str:
@@ -62,23 +62,32 @@ def _get_section(kind: str, is_outlier: bool) -> str:
 
 
 def get_fig_caption(name: str, kind: str, is_outlier: bool) -> str:
-    caption = f"{name}: {KIND_CATPIONS[kind]}"
+    try:
+        caption = f"{name}: {KIND_CATPIONS[kind]}"
+    except KeyError:
+        raise NotImplementedError("Dont have a caption for plots of kind {}.".format(kind))
     if is_outlier:
         caption += ' (Outliers removed)'
     return caption
 
 
 def get_feature_name(name: str):
+    name = re.sub('.pdf', '', name)
     try:
-        return NAMES[re.sub('.pdf', '', name)]
+        return NAMES[name]
     except KeyError:
-        return None
+        pass
+    if name == 'negative_grid':
+        return 'Negative Emotions'
+    elif name == 'scatter_grid':
+        return 'Raw Sentiment Scores'
+    return None
 
 
 def make_figure(path: Path, caption: str, label: str) -> str:
     label = ''.join(letter for letter in label if (letter not in r'$\\'))
     txt = r'\begin{figure}[h]\centering' + '\n\t'
-    txt += r'\includegraphics[width =\textwidth]{' + str(path) + '}' + '\n\t'
+    txt += r'\includegraphics[width =\textwidth]{' + str(path.absolute()) + '}' + '\n\t'
     txt += r'\caption{' + caption + '}\n\t'
     txt += r'\label{fig: ' + label + '}' + '\n'
     txt += r'\end{figure}' + '\n\n'
@@ -90,7 +99,7 @@ def plots(plot_dir: Path):
 
     for folder in plot_dir.iterdir():
         kind = _get_kind(folder.name)
-        if kind in ['attributes', 'without']:
+        if kind in ['attributes']:
             continue  # Not gonna be used
 
         is_outlier = 'outliers' in folder.name
@@ -100,9 +109,6 @@ def plots(plot_dir: Path):
 
             if not fig.name.endswith('.pdf'):
                 continue
-
-            if kind in ['individuals', 'ablation']:
-                print('ALARM!')
 
             feature = get_feature_name(fig.name)
             if feature is None:
