@@ -65,7 +65,7 @@ def get_first(x):
     return strv
 
 
-def pvalstars(x):
+def pvalstars(x: float) -> str:
     if x <= 0.001:
         return "***"
     if x <= 0.01:
@@ -222,7 +222,7 @@ class RDD:
 
         return X, Y
 
-    def get_table(self, features: List[str] = None, CI_features: List[str] = None, asPandas: bool = False, alpha: float = 0.05) -> str:
+    def get_table(self, features: List[str] = None, CI_features: List[str] = None, asPandas: bool = False) -> str:
         """
         Makes a Latex table from the internal RDD results.
         Parameters
@@ -240,6 +240,7 @@ class RDD:
         for feature in features:
             res = self.rdd_fit[feature]
             summary = pd.read_html(res.summary().tables[1].as_html(), header=0, index_col=0)[0]
+            summary['P>|t|'] = res.pvalues  # Higher precision than given in the default summary
             summary = summary.rename(index={'Intercept': r'$\alpha_0$', 'C(threshold)[T.1]': r'$\alpha$',
                                             'time_delta': r'$\beta_0$', 'C(threshold)[T.1]:time_delta': r'$\beta$',
                                             'governing_party': 'governing', 'congress_member': 'congress'},
@@ -282,6 +283,7 @@ class RDD:
         color = kwargs.get('color', 'black')
 
         s = 15 if kwargs.get('lean', False) else 30
+        s = kwargs.get('s', s)
         scatter_color = 'tab:grey' if kwargs.get('lean', False) else 'black'  # Default colors
         scatter_color = kwargs.get('scatter_color', scatter_color)
         timeLinePlot(self.data.date, self.data[feature], ax=ax, snsargs={'s': s, 'color': scatter_color}, kind='scatter')
@@ -331,15 +333,26 @@ class RDD:
 
         # Parameter Annotations
         if parameters:
-            param_annotation = ', '.join([
-                r'$\alpha$=' + self.get_table(asPandas=True)[r'$\alpha$'].loc[
-                    ' '.join(feature.split('_')[1:])],
-                r'$\beta$=' + self.get_table(asPandas=True)[r'$\beta$'].loc[' '.join(feature.split('_')[1:])]
-            ])
-            # ax.annotate(param_annotation, (1.02, 0), fontsize=FONTSIZE,
-            #             xycoords=trans, rotation=90)
+            if parameters == 'all':  # Bit dirty, but nice hack to allow booleans and strings
+                param_annotation = ', '.join([
+                    r'$\alpha_0$=' + self.get_table(asPandas=True)[r'$\alpha_0$'].loc[
+                        ' '.join(feature.split('_')[1:])],
+                    r'$\beta_0$=' + self.get_table(asPandas=True)[r'$\beta_0$'].loc[
+                        ' '.join(feature.split('_')[1:])],
+                    r'$\alpha$=' + self.get_table(asPandas=True)[r'$\alpha$'].loc[
+                        ' '.join(feature.split('_')[1:])],
+                    r'$\beta$=' + self.get_table(asPandas=True)[r'$\beta$'].loc[' '.join(feature.split('_')[1:])]
+                ])
+            else:
+                param_annotation = ', '.join([
+                    r'$\alpha$=' + self.get_table(asPandas=True)[r'$\alpha$'].loc[
+                        ' '.join(feature.split('_')[1:])],
+                    r'$\beta$=' + self.get_table(asPandas=True)[r'$\beta$'].loc[' '.join(feature.split('_')[1:])]
+                ])
             box_props = dict(boxstyle='square', facecolor='white', alpha=0.5)
-            ax.text(0.98, 0.975, param_annotation, transform=ax.transAxes, fontsize=FONTSIZE, verticalalignment='top',
+            annSize = FONTSIZE - 2 if parameters == 'all' else FONTSIZE
+            annSize = kwargs.get('annSize', annSize)
+            ax.text(0.98, 0.975, param_annotation, transform=ax.transAxes, fontsize=annSize, verticalalignment='top',
                     horizontalalignment='right', bbox=box_props)
 
         # Visuals
@@ -473,7 +486,7 @@ def main():
         if not file.name.endswith('.csv'):
             continue
         aggregates = pd.read_csv(str(file)).sort_values('time_delta')
-        outliers_removed = remove_outliers(aggregates, 2)
+        outliers_removed = remove_outliers(aggregates, 3)
         fname = file.name.split('.')[0]
 
         masks = dict()
@@ -501,6 +514,7 @@ def main():
                 rdd_results = RDD_statsmodels(tmp)
                 lin_reg = linear_regression(tmp)
                 reg = RDD(tmp, rdd_results, lin_reg)
+                reg.get_table()
 
                 save_in = storage_folder
                 if make_folder is not None:
