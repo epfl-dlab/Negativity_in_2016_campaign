@@ -32,7 +32,8 @@ parser.add_argument('--exclude_top_n', help='If given, will perform an aggregati
                                             'of the indivdual on the score', type=int, required=False)
 parser.add_argument('--extract_top_n', help='Same as "individuals" argument, but takes the n most verbose individuals'
                                             'instead of specifying every one.', type=int)
-parser.add_argument('--top_n_file', help='Requiered for exclude_top_n: CSV file including rank and qid.')
+parser.add_argument('--top_n_file', help='Required for exclude_top_n: CSV file including rank and qid.')
+parser.add_argument('--standardize', default=True)
 
 
 def _prep_people(df: DataFrame) -> DataFrame:
@@ -278,10 +279,14 @@ def main():
     # Basic Quotation Aggregation
     agg = getScoresByGroups(df, [])
     # The same standardization values will be used for all - take mean and std "pre-treatment" (before the primaries)
-    MEAN = agg[features][agg.index < KINK].mean()
-    STD = agg[features][agg.index < KINK].std()
-    pickle.dump(MEAN, base.joinpath('mean.pickle').open('wb'))
-    pickle.dump(STD, base.joinpath('std.pickle').open('wb'))
+    if args.standardize:
+        MEAN = agg[features][agg.index < KINK].mean()
+        STD = agg[features][agg.index < KINK].std()
+        pickle.dump(MEAN, base.joinpath('mean.pickle').open('wb'))
+        pickle.dump(STD, base.joinpath('std.pickle').open('wb'))
+    else:
+        MEAN = 0
+        STD = 1
     save(_df_postprocessing(agg, features, MEAN, STD), 'QuotationAggregation')
 
     agg = getScoresByGroups(df, ['gender', 'party', 'congress_member'])
