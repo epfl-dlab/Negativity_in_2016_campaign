@@ -1,4 +1,6 @@
 \begin{table}[h]\centering
+\caption{Key Metrics for all Sentiment Attributes}
+	\label{fig: mean_std}
 	\begin{tabular}{lllll}
 	\toprule
 	$y_{cat}$ &    $\mu$ & $\sigma$ & Every Nth & $\sigma / \mu$ \\
@@ -18,11 +20,11 @@
 	\bottomrule
 	\end{tabular}
 	
-\caption{Key Metrics for all Sentiment Attributes}
-	\label{fig: mean_std}
 \end{table}
 
 \begin{table}[h]\centering
+\caption{RDD parameters for aggregation on distinct speaker groups.}
+	\label{fig: Attributes_1}
 \begin{adjustbox}{width=\linewidth, center}
 	\begin{tabular}{lllllllll}
 	\toprule
@@ -38,17 +40,17 @@
 	Certainty             &       1***(0.5, 1.4) &      0.9**(0.3, 1.5) &      0.03***(0.02, 0.03) &      0.02*(0.001, 0.03) &   -0.3*(-0.7, -0.03) &     1.1***(0.8, 1.4) &   -0.5**(-0.8, -0.2) &      0.5**(0.2, 0.8) \\
 	Swearing (empath)     &  -0.6***(-0.8, -0.3) &     1.4***(1.1, 1.7) &   -0.03***(-0.04, -0.03) &     0.03***(0.02, 0.04) &  -0.3***(-0.5, -0.2) &  -1.4***(-1.5, -1.2) &  -0.5***(-0.7, -0.4) &   -0.2*(-0.3, -0.01) \\
 	science               &       0.7***(0.4, 1) &  -1.7***(-2.1, -1.3) &      0.03***(0.02, 0.04) &  -0.05***(-0.07, -0.04) &     1.1***(0.8, 1.3) &      0.2(-0.03, 0.4) &  -1.1***(-1.3, -0.9) &     0.7***(0.4, 0.9) \\
-	Neg. Emotion (empath) &    -1***(-1.3, -0.7) &     1.8***(1.4, 2.2) &   -0.02***(-0.03, -0.02) &    0.02***(0.007, 0.03) &     0.6***(0.4, 0.8) &  -0.4***(-0.6, -0.2) &     0.5***(0.3, 0.7) &    -0.8***(-1, -0.6) \\
+	Neg. Emotion (empath) &    -1***(-1.3, -0.7) &     1.8***(1.4, 2.2) &   -0.02***(-0.03, -0.02) &     0.02**(0.007, 0.03) &     0.6***(0.4, 0.8) &  -0.4***(-0.6, -0.2) &     0.5***(0.3, 0.7) &    -0.8***(-1, -0.6) \\
 	Pos. Emotion (empath) &       0.7***(0.4, 1) &     1.3***(0.9, 1.7) &     0.004(-0.002, 0.009) &  -0.04***(-0.05, -0.03) &     -0.2(-0.4, 0.04) &     0.5***(0.3, 0.7) &  -1.1***(-1.3, -0.9) &     -0.03(-0.2, 0.2) \\
 	\bottomrule
 	\end{tabular}
 	
 \end{adjustbox}
-	\caption{RDD parameters for aggregation on distinct speaker groups.}
-	\label{fig: Attributes_1}
-\end{table}
+	\end{table}
 
 \begin{table}[h]\centering
+\caption{RDD parameters for aggregation on distinct speaker groups, excluding outliers.}
+	\label{fig: Attributes_2}
 \begin{adjustbox}{width=\linewidth, center}
 	\begin{tabular}{lllllllll}
 	\toprule
@@ -56,7 +58,7 @@
 	\midrule
 	Positive Emotions     &      0.2(-0.05, 0.5) &      0.03(-0.3, 0.4) &      0.003(-0.001, 0.007) &       -0.01*(-0.02, -0) &   -0.2*(-0.4, -0.05) &   -0.2*(-0.4, -0.04) &  -0.7***(-0.9, -0.5) &      0.2*(0.03, 0.4) \\
 	Negative Emotions     &       0.2(-0.1, 0.6) &       0.1(-0.2, 0.5) &     -0.002(-0.007, 0.003) &      0.01*(0.001, 0.02) &     0.2*(0.002, 0.3) &   -0.3**(-0.4, -0.1) &     1.3***(1.1, 1.4) &   -0.2*(-0.4, -0.03) \\
-	Anxiety               &   -0.4**(-0.6, -0.1) &     0.7***(0.4, 1.1) &  -0.007***(-0.01, -0.003) &     0.006(-0.002, 0.01) &     0.3***(0.2, 0.5) &     0.4***(0.2, 0.5) &       0.8***(0.7, 1) &  -0.3***(-0.4, -0.1) \\
+	Anxiety               &   -0.4**(-0.6, -0.1) &     0.7***(0.4, 1.1) &  -0.007***(-0.01, -0.003) &     0.006(-0.002, 0.01) &     0.3***(0.2, 0.5) &     0.4***(0.2, 0.5) &       0.8***(0.7, 1) &   -0.3**(-0.4, -0.1) \\
 	Anger                 &       0.4*(0.1, 0.8) &       0.3(-0.1, 0.7) &      0.001(-0.004, 0.006) &     0.004(-0.005, 0.01) &     -0.2(-0.3, 0.03) &     -0.1(-0.3, 0.04) &       1.2***(1, 1.4) &         0(-0.2, 0.2) \\
 	Sadness               &   -0.3*(-0.6, -0.06) &      0.3(-0.04, 0.7) &        -0.005*(-0.009, 0) &     0.001(-0.008, 0.01) &      0.2*(0.05, 0.4) &     -0.06(-0.2, 0.1) &     0.7***(0.5, 0.8) &  -0.3***(-0.5, -0.2) \\
 	Swearing Terms        &  -0.6***(-0.7, -0.5) &     0.4***(0.3, 0.6) &    -0.02***(-0.02, -0.02) &     0.02***(0.02, 0.03) &   -0.1*(-0.2, -0.01) &  -0.8***(-0.9, -0.7) &   -0.08(-0.2, 0.004) &  -0.2***(-0.3, -0.1) \\
@@ -64,24 +66,24 @@
 	Certainty             &     1.1***(0.9, 1.4) &     0.3(-0.009, 0.7) &     0.009***(0.004, 0.01) &     0.003(-0.007, 0.01) &      0.03(-0.2, 0.2) &     0.3***(0.2, 0.5) &      0.1(-0.07, 0.3) &      0.1(-0.05, 0.3) \\
 	Swearing (empath)     &  -0.5***(-0.6, -0.3) &       0.8***(0.5, 1) &    -0.02***(-0.02, -0.02) &     0.02***(0.01, 0.02) &  -0.2***(-0.3, -0.1) &    -1***(-1.1, -0.9) &  -0.3***(-0.4, -0.2) &    -0.1(-0.2, 0.006) \\
 	science               &     -0.08(-0.3, 0.1) &  -0.6***(-0.9, -0.3) &      0.01***(0.006, 0.01) &  -0.03***(-0.04, -0.02) &     0.5***(0.3, 0.6) &      0.1*(0.01, 0.3) &  -0.5***(-0.7, -0.4) &     0.2***(0.1, 0.4) \\
-	Neg. Emotion (empath) &  -0.5***(-0.7, -0.3) &     1.1***(0.9, 1.4) &    -0.01***(-0.02, -0.01) &     0.008*(0.001, 0.01) &     0.1*(0.007, 0.3) &  -0.3***(-0.4, -0.2) &     0.2**(0.04, 0.3) &  -0.4***(-0.6, -0.3) \\
+	Neg. Emotion (empath) &  -0.5***(-0.7, -0.3) &     1.1***(0.9, 1.4) &    -0.01***(-0.02, -0.01) &     0.008*(0.001, 0.01) &     0.1*(0.007, 0.3) &  -0.3***(-0.4, -0.2) &      0.2*(0.04, 0.3) &  -0.4***(-0.6, -0.3) \\
 	Pos. Emotion (empath) &     0.5***(0.3, 0.7) &     0.7***(0.4, 0.9) &      0.004*(0.001, 0.008) &  -0.02***(-0.02, -0.01) &   -0.2*(-0.3, -0.04) &     0.2***(0.1, 0.4) &  -0.6***(-0.7, -0.5) &    -0.06(-0.2, 0.08) \\
 	\bottomrule
 	\end{tabular}
 	
 \end{adjustbox}
-	\caption{RDD parameters for aggregation on distinct speaker groups, excluding outliers.}
-	\label{fig: Attributes_2}
-\end{table}
+	\end{table}
 
 \begin{table}[h]\centering
+\caption{RDD parameters for quotation aggregation.}
+	\label{fig: Quotation_1}
 \begin{adjustbox}{width=\linewidth, center}
 	\begin{tabular}{lllll}
 	\toprule
 	{} &           $\alpha_0$ &             $\alpha$ &               $\beta_0$ &                 $\beta$ \\
 	\midrule
 	Positive Emotions     &       0.4(-0.1, 0.9) &     1.6***(0.8, 2.4) &      0.01(-0.001, 0.02) &   -0.08***(-0.1, -0.06) \\
-	Negative Emotions     &  -0.9***(-1.4, -0.5) &     2.2***(1.5, 2.9) &  -0.02***(-0.03, -0.01) &     0.03***(0.01, 0.05) \\
+	Negative Emotions     &  -0.9***(-1.4, -0.5) &     2.2***(1.5, 2.9) &  -0.02***(-0.03, -0.01) &      0.03**(0.01, 0.05) \\
 	Anxiety               &  -0.9***(-1.4, -0.4) &     1.7***(0.8, 2.5) &  -0.02***(-0.03, -0.01) &     0.03**(0.009, 0.05) \\
 	Anger                 &      -0.4(-0.9, 0.1) &       1.8***(1, 2.6) &    -0.009(-0.02, 0.001) &      0.02(-0.004, 0.04) \\
 	Sadness               &  -0.9***(-1.3, -0.4) &         1*(0.2, 1.8) &  -0.02***(-0.03, -0.01) &      0.02(-0.001, 0.04) \\
@@ -96,37 +98,37 @@
 	\end{tabular}
 	
 \end{adjustbox}
-	\caption{RDD parameters for quotation aggregation.}
-	\label{fig: Quotation_1}
-\end{table}
+	\end{table}
 
 \begin{table}[h]\centering
+\caption{RDD parameters for quotation aggregation, excluding outliers.}
+	\label{fig: Quotation_2}
 \begin{adjustbox}{width=\linewidth, center}
 	\begin{tabular}{lllll}
 	\toprule
 	{} &           $\alpha_0$ &             $\alpha$ &                $\beta_0$ &                 $\beta$ \\
 	\midrule
-	Positive Emotions     &      0.3(-0.02, 0.6) &     0.9***(0.5, 1.4) &           0.006(0, 0.01) &  -0.04***(-0.06, -0.03) \\
-	Negative Emotions     &  -1.1***(-1.3, -0.8) &     1.4***(0.9, 1.8) &  -0.01***(-0.02, -0.008) &    0.02***(0.009, 0.03) \\
-	Anxiety               &  -0.9***(-1.2, -0.7) &     0.8***(0.3, 1.2) &  -0.01***(-0.02, -0.009) &     0.02***(0.01, 0.04) \\
-	Anger                 &  -0.7***(-1.1, -0.4) &     1.2***(0.7, 1.8) &         -0.007(-0.01, 0) &     0.006(-0.008, 0.02) \\
-	Sadness               &  -0.7***(-1.1, -0.3) &      0.6(-0.05, 1.2) &  -0.02***(-0.02, -0.007) &      0.02*(0.003, 0.03) \\
-	Swearing Terms        &    -1.2***(-1.4, -1) &     1.1***(0.8, 1.3) &   -0.03***(-0.03, -0.02) &     0.03***(0.02, 0.03) \\
-	Tentativeness         &     -0.2(-0.5, 0.06) &       0.3(-0.1, 0.8) &  -0.02***(-0.02, -0.009) &    -0.006(-0.02, 0.007) \\
-	Certainty             &     -0.07(-0.3, 0.1) &      0.4*(0.08, 0.8) &      0.01***(0.01, 0.02) &     0.003(-0.006, 0.01) \\
-	Swearing (empath)     &  -1.4***(-1.7, -1.2) &     1.9***(1.5, 2.3) &   -0.03***(-0.03, -0.02) &     0.02***(0.01, 0.03) \\
-	science               &     1.3***(1.1, 1.6) &  -1.6***(-2.1, -1.2) &      0.02***(0.01, 0.03) &  -0.03***(-0.04, -0.02) \\
-	Neg. Emotion (empath) &  -1.5***(-1.8, -1.2) &     2.1***(1.6, 2.5) &   -0.03***(-0.03, -0.02) &    0.02***(0.008, 0.03) \\
-	Pos. Emotion (empath) &   -0.3*(-0.7, 0.001) &     1.2***(0.6, 1.8) &     0.002(-0.006, 0.009) &  -0.02**(-0.03, -0.005) \\
+	Positive Emotions     &      0.05(-0.3, 0.4) &     1.1***(0.5, 1.8) &      0.004(-0.004, 0.01) &  -0.04***(-0.06, -0.03) \\
+	Negative Emotions     &  -0.6***(-0.9, -0.3) &     1.3***(0.8, 1.9) &  -0.01***(-0.02, -0.007) &     0.02***(0.01, 0.04) \\
+	Anxiety               &  -0.7***(-1.1, -0.4) &      0.9**(0.3, 1.5) &  -0.02***(-0.02, -0.009) &     0.03***(0.01, 0.04) \\
+	Anger                 &    -0.3(-0.6, 0.006) &     1.2***(0.7, 1.7) &     -0.005(-0.01, 0.001) &      0.02*(0.004, 0.03) \\
+	Sadness               &     -0.6**(-1, -0.2) &       0.3(-0.4, 0.9) &   -0.01**(-0.02, -0.006) &      0.02*(0.005, 0.04) \\
+	Swearing Terms        &  -1.1***(-1.2, -0.9) &     0.9***(0.7, 1.1) &   -0.02***(-0.03, -0.02) &     0.02***(0.02, 0.03) \\
+	Tentativeness         &  -0.8***(-1.2, -0.5) &       0.3(-0.3, 0.9) &   -0.02***(-0.03, -0.01) &     -0.003(-0.02, 0.01) \\
+	Certainty             &     1.1***(0.7, 1.4) &       0.7*(0.2, 1.3) &      0.02***(0.01, 0.03) &     -0.007(-0.03, 0.01) \\
+	Swearing (empath)     &  -1.1***(-1.3, -0.8) &     1.7***(1.4, 2.1) &   -0.02***(-0.03, -0.02) &     0.02***(0.01, 0.03) \\
+	science               &     0.8***(0.5, 1.2) &  -1.7***(-2.2, -1.2) &      0.02***(0.01, 0.03) &  -0.04***(-0.05, -0.02) \\
+	Neg. Emotion (empath) &  -1.2***(-1.4, -0.9) &     2.1***(1.7, 2.6) &   -0.03***(-0.03, -0.02) &     0.02**(0.008, 0.03) \\
+	Pos. Emotion (empath) &     -0.03(-0.4, 0.3) &     1.2***(0.7, 1.8) &     0.002(-0.006, 0.009) &  -0.02**(-0.04, -0.005) \\
 	\bottomrule
 	\end{tabular}
 	
 \end{adjustbox}
-	\caption{RDD parameters for quotation aggregation, excluding outliers.}
-	\label{fig: Quotation_2}
-\end{table}
+	\end{table}
 
 \begin{table}[h]\centering
+\caption{RDD parameters for speaker aggregation.}
+	\label{fig: Speaker_1}
 \begin{adjustbox}{width=\linewidth, center}
 	\begin{tabular}{lllll}
 	\toprule
@@ -135,7 +137,7 @@
 	Positive Emotions     &     1.2***(0.6, 1.7) &    0.5(-0.4, 1.4) &            0.01(0, 0.02) &  -0.05***(-0.07, -0.02) \\
 	Negative Emotions     &  -3.5***(-3.7, -3.3) &  0.8***(0.4, 1.2) &   -0.03***(-0.04, -0.03) &     0.04***(0.03, 0.05) \\
 	Anxiety               &  -2.2***(-2.7, -1.8) &    0.6(-0.1, 1.3) &   -0.02***(-0.03, -0.01) &     0.05***(0.03, 0.07) \\
-	Anger                 &  -2.9***(-3.1, -2.7) &  0.6***(0.2, 0.9) &  -0.01***(-0.01, -0.006) &    0.02***(0.007, 0.03) \\
+	Anger                 &  -2.9***(-3.1, -2.7) &   0.6**(0.2, 0.9) &  -0.01***(-0.01, -0.006) &    0.02***(0.007, 0.03) \\
 	Sadness               &  -2.3***(-2.7, -1.8) &      0.3(-0.5, 1) &   -0.02***(-0.03, -0.01) &     0.05***(0.03, 0.07) \\
 	Swearing Terms        &  -1.4***(-1.6, -1.2) &   0.4*(0.05, 0.7) &   -0.02***(-0.02, -0.01) &     0.02***(0.01, 0.03) \\
 	Tentativeness         &     -0.3(-0.7, 0.09) &   0.6(-0.01, 1.3) &   -0.03***(-0.04, -0.02) &     -0.004(-0.02, 0.01) \\
@@ -148,11 +150,11 @@
 	\end{tabular}
 	
 \end{adjustbox}
-	\caption{RDD parameters for speaker aggregation.}
-	\label{fig: Speaker_1}
-\end{table}
+	\end{table}
 
 \begin{table}[h]\centering
+\caption{RDD parameters for speaker aggregation, excluding outliers.}
+	\label{fig: Speaker_2}
 \begin{adjustbox}{width=\linewidth, center}
 	\begin{tabular}{lllll}
 	\toprule
@@ -174,11 +176,11 @@
 	\end{tabular}
 	
 \end{adjustbox}
-	\caption{RDD parameters for speaker aggregation, excluding outliers.}
-	\label{fig: Speaker_2}
-\end{table}
+	\end{table}
 
 \begin{table}[h]\centering
+\caption{RDD parameters for aggregation over different parties, democrats only.}
+	\label{fig: Party_1}
 \begin{adjustbox}{width=\linewidth, center}
 	\begin{tabular}{lllll}
 	\toprule
@@ -190,7 +192,7 @@
 	Anger                 &    -0.006(-0.6, 0.6) &   1.6***(0.7, 2.5) &      0.001(-0.01, 0.01) &       0.01(-0.01, 0.04) \\
 	Sadness               &      -0.3(-0.9, 0.2) &    0.8(-0.07, 1.8) &     -0.01(-0.02, 0.001) &      0.02(-0.007, 0.04) \\
 	Swearing Terms        &  -1.4***(-1.6, -1.2) &     1***(0.6, 1.4) &  -0.03***(-0.03, -0.02) &     0.03***(0.02, 0.04) \\
-	Tentativeness         &    -2.3***(-2.7, -2) &     1***(0.4, 1.6) &  -0.03***(-0.04, -0.03) &     -0.001(-0.02, 0.01) \\
+	Tentativeness         &    -2.3***(-2.7, -2) &      1**(0.4, 1.6) &  -0.03***(-0.04, -0.03) &     -0.001(-0.02, 0.01) \\
 	Certainty             &         1.5***(1, 2) &     0.2(-0.6, 0.9) &     0.03***(0.02, 0.04) &       0.01(-0.01, 0.03) \\
 	Swearing (empath)     &  -1.4***(-1.7, -1.1) &     2***(1.6, 2.5) &  -0.03***(-0.03, -0.02) &     0.02***(0.01, 0.04) \\
 	science               &     2.1***(1.7, 2.5) &  -2***(-2.7, -1.3) &     0.03***(0.02, 0.04) &  -0.07***(-0.09, -0.06) \\
@@ -200,37 +202,37 @@
 	\end{tabular}
 	
 \end{adjustbox}
-	\caption{RDD parameters for aggregation over different parties, democrats only.}
-	\label{fig: Party_1}
-\end{table}
+	\end{table}
 
 \begin{table}[h]\centering
+\caption{RDD parameters for aggregation over different parties, excluding outliers, democrats only.}
+	\label{fig: Party_2}
 \begin{adjustbox}{width=\linewidth, center}
 	\begin{tabular}{lllll}
 	\toprule
-	{} &           $\alpha_0$ &          $\alpha$ &                $\beta_0$ &                 $\beta$ \\
+	{} &           $\alpha_0$ &          $\alpha$ &               $\beta_0$ &                 $\beta$ \\
 	\midrule
-	Positive Emotions     &     -0.03(-0.4, 0.3) &  1.2***(0.5, 1.8) &      0.004(-0.005, 0.01) &  -0.04***(-0.06, -0.02) \\
-	Negative Emotions     &   -0.4*(-0.7, -0.02) &    1.4***(0.9, 2) &   -0.009*(-0.01, -0.002) &     0.02**(0.006, 0.04) \\
-	Anxiety               &   -0.4*(-0.8, -0.06) &    0.8*(0.2, 1.4) &  -0.01***(-0.02, -0.005) &     0.03***(0.01, 0.04) \\
-	Anger                 &     -0.06(-0.4, 0.3) &  1.1***(0.5, 1.7) &    -0.001(-0.008, 0.007) &      0.02*(0.005, 0.04) \\
-	Sadness               &      -0.2(-0.7, 0.2) &    0.4(-0.4, 1.1) &     -0.008(-0.02, 0.001) &      0.01(-0.007, 0.03) \\
-	Swearing Terms        &    -1.2***(-1.3, -1) &    0.8***(0.5, 1) &   -0.02***(-0.02, -0.02) &     0.03***(0.02, 0.03) \\
-	Tentativeness         &  -1.8***(-2.2, -1.5) &    0.4(-0.1, 0.9) &   -0.02***(-0.03, -0.01) &          0.02*(0, 0.03) \\
-	Certainty             &       1.4***(1, 1.8) &    0.5(-0.2, 1.2) &      0.02***(0.01, 0.03) &         -0.02(-0.04, 0) \\
-	Swearing (empath)     &    -1.3***(-1.5, -1) &  1.8***(1.4, 2.2) &   -0.02***(-0.03, -0.01) &    0.02***(0.007, 0.03) \\
-	science               &     1.1***(0.6, 1.6) &  -1**(-1.7, -0.3) &      0.02**(0.006, 0.03) &  -0.05***(-0.07, -0.04) \\
-	Neg. Emotion (empath) &  -1.2***(-1.5, -0.9) &  1.8***(1.3, 2.3) &   -0.02***(-0.03, -0.02) &     0.03***(0.02, 0.04) \\
-	Pos. Emotion (empath) &      -0.1(-0.5, 0.2) &  1.3***(0.7, 1.9) &        -0(-0.008, 0.008) &   -0.02*(-0.03, -0.002) \\
+	Positive Emotions     &     -0.03(-0.4, 0.3) &  1.2***(0.5, 1.8) &     0.004(-0.005, 0.01) &  -0.04***(-0.06, -0.02) \\
+	Negative Emotions     &   -0.4*(-0.7, -0.02) &    1.4***(0.9, 2) &  -0.009*(-0.01, -0.002) &     0.02**(0.006, 0.04) \\
+	Anxiety               &   -0.4*(-0.8, -0.06) &    0.8*(0.2, 1.4) &  -0.01**(-0.02, -0.005) &      0.03**(0.01, 0.04) \\
+	Anger                 &     -0.06(-0.4, 0.3) &  1.1***(0.5, 1.7) &   -0.001(-0.008, 0.007) &      0.02*(0.005, 0.04) \\
+	Sadness               &      -0.2(-0.7, 0.2) &    0.4(-0.4, 1.1) &    -0.008(-0.02, 0.001) &      0.01(-0.007, 0.03) \\
+	Swearing Terms        &    -1.2***(-1.3, -1) &    0.8***(0.5, 1) &  -0.02***(-0.02, -0.02) &     0.03***(0.02, 0.03) \\
+	Tentativeness         &  -1.8***(-2.2, -1.5) &    0.4(-0.1, 0.9) &  -0.02***(-0.03, -0.01) &          0.02*(0, 0.03) \\
+	Certainty             &       1.4***(1, 1.8) &    0.5(-0.2, 1.2) &     0.02***(0.01, 0.03) &         -0.02(-0.04, 0) \\
+	Swearing (empath)     &    -1.3***(-1.5, -1) &  1.8***(1.4, 2.2) &  -0.02***(-0.03, -0.01) &     0.02**(0.007, 0.03) \\
+	science               &     1.1***(0.6, 1.6) &  -1**(-1.7, -0.3) &     0.02**(0.006, 0.03) &  -0.05***(-0.07, -0.04) \\
+	Neg. Emotion (empath) &  -1.2***(-1.5, -0.9) &  1.8***(1.3, 2.3) &  -0.02***(-0.03, -0.02) &     0.03***(0.02, 0.04) \\
+	Pos. Emotion (empath) &      -0.1(-0.5, 0.2) &  1.3***(0.7, 1.9) &       -0(-0.008, 0.008) &   -0.02*(-0.03, -0.002) \\
 	\bottomrule
 	\end{tabular}
 	
 \end{adjustbox}
-	\caption{RDD parameters for aggregation over different parties, excluding outliers, democrats only.}
-	\label{fig: Party_2}
-\end{table}
+	\end{table}
 
 \begin{table}[h]\centering
+\caption{RDD parameters for aggregation over different parties, republicans only.}
+	\label{fig: Party_3}
 \begin{adjustbox}{width=\linewidth, center}
 	\begin{tabular}{lllll}
 	\toprule
@@ -252,11 +254,11 @@
 	\end{tabular}
 	
 \end{adjustbox}
-	\caption{RDD parameters for aggregation over different parties, republicans only.}
-	\label{fig: Party_3}
-\end{table}
+	\end{table}
 
 \begin{table}[h]\centering
+\caption{RDD parameters for aggregation over different parties, excluding outliers, republicans only.}
+	\label{fig: Party_4}
 \begin{adjustbox}{width=\linewidth, center}
 	\begin{tabular}{lllll}
 	\toprule
@@ -278,11 +280,11 @@
 	\end{tabular}
 	
 \end{adjustbox}
-	\caption{RDD parameters for aggregation over different parties, excluding outliers, republicans only.}
-	\label{fig: Party_4}
-\end{table}
+	\end{table}
 
 \begin{table}[h]\centering
+\caption{RDD parameters for aggregation on verbosity quartiles, most verbose quartile of politicians.}
+	\label{fig: Verbosity_1}
 \begin{adjustbox}{width=\linewidth, center}
 	\begin{tabular}{lllll}
 	\toprule
@@ -299,16 +301,16 @@
 	Swearing (empath)     &  -1.4***(-1.7, -1.2) &     0.6**(0.2, 0.9) &    -0.03***(-0.03, -0.02) &     0.02***(0.01, 0.03) \\
 	science               &     2.5***(2.2, 2.9) &  -0.9**(-1.4, -0.3) &       0.02***(0.02, 0.03) &  -0.04***(-0.05, -0.02) \\
 	Neg. Emotion (empath) &  -2.1***(-2.3, -1.8) &    0.9***(0.5, 1.3) &    -0.04***(-0.04, -0.03) &     0.04***(0.03, 0.05) \\
-	Pos. Emotion (empath) &      0.4**(0.1, 0.8) &   0.5*(-0.001, 1.1) &          0(-0.007, 0.007) &     -0.01(-0.02, 0.004) \\
+	Pos. Emotion (empath) &      0.4**(0.1, 0.8) &    0.5(-0.001, 1.1) &          0(-0.007, 0.007) &     -0.01(-0.02, 0.004) \\
 	\bottomrule
 	\end{tabular}
 	
 \end{adjustbox}
-	\caption{RDD parameters for aggregation on verbosity quartiles, most verbose quartile of politicians.}
-	\label{fig: Verbosity_1}
-\end{table}
+	\end{table}
 
 \begin{table}[h]\centering
+\caption{RDD parameters for aggregation on verbosity quartiles, excluding outliers, most verbose quartile of politicians.}
+	\label{fig: Verbosity_2}
 \begin{adjustbox}{width=\linewidth, center}
 	\begin{tabular}{lllll}
 	\toprule
@@ -330,11 +332,11 @@
 	\end{tabular}
 	
 \end{adjustbox}
-	\caption{RDD parameters for aggregation on verbosity quartiles, excluding outliers, most verbose quartile of politicians.}
-	\label{fig: Verbosity_2}
-\end{table}
+	\end{table}
 
 \begin{table}[h]\centering
+\caption{RDD parameters for aggregation on verbosity quartiles, 2nd most verbose quartile of politicians.}
+	\label{fig: Verbosity_3}
 \begin{adjustbox}{width=\linewidth, center}
 	\begin{tabular}{lllll}
 	\toprule
@@ -356,11 +358,11 @@
 	\end{tabular}
 	
 \end{adjustbox}
-	\caption{RDD parameters for aggregation on verbosity quartiles, 2nd most verbose quartile of politicians.}
-	\label{fig: Verbosity_3}
-\end{table}
+	\end{table}
 
 \begin{table}[h]\centering
+\caption{RDD parameters for aggregation on verbosity quartiles, excluding outliers, 2nd most verbose quartile of politicians.}
+	\label{fig: Verbosity_4}
 \begin{adjustbox}{width=\linewidth, center}
 	\begin{tabular}{lllll}
 	\toprule
@@ -382,11 +384,11 @@
 	\end{tabular}
 	
 \end{adjustbox}
-	\caption{RDD parameters for aggregation on verbosity quartiles, excluding outliers, 2nd most verbose quartile of politicians.}
-	\label{fig: Verbosity_4}
-\end{table}
+	\end{table}
 
 \begin{table}[h]\centering
+\caption{RDD parameters for aggregation on verbosity quartiles, 3rd most verbose quartile of politicians.}
+	\label{fig: Verbosity_5}
 \begin{adjustbox}{width=\linewidth, center}
 	\begin{tabular}{lllll}
 	\toprule
@@ -403,16 +405,16 @@
 	Swearing (empath)     &  -1.4***(-1.9, -0.9) &  -0.007(-0.9, 0.9) &  -0.02***(-0.03, -0.009) &     0.02(-0.001, 0.04) \\
 	science               &       2.1***(1.3, 3) &    -0.9(-2.2, 0.5) &       0.02(-0.002, 0.04) &     -0.01(-0.05, 0.02) \\
 	Neg. Emotion (empath) &  -2.1***(-2.7, -1.6) &     0.2(-0.7, 1.1) &   -0.03***(-0.04, -0.02) &    0.05***(0.03, 0.07) \\
-	Pos. Emotion (empath) &     1.3***(0.5, 2.1) &     1.1(-0.1, 2.4) &       0.01(-0.007, 0.03) &  -0.04*(-0.07, -0.007) \\
+	Pos. Emotion (empath) &      1.3**(0.5, 2.1) &     1.1(-0.1, 2.4) &       0.01(-0.007, 0.03) &  -0.04*(-0.07, -0.007) \\
 	\bottomrule
 	\end{tabular}
 	
 \end{adjustbox}
-	\caption{RDD parameters for aggregation on verbosity quartiles, 3rd most verbose quartile of politicians.}
-	\label{fig: Verbosity_5}
-\end{table}
+	\end{table}
 
 \begin{table}[h]\centering
+\caption{RDD parameters for aggregation on verbosity quartiles, excluding outliers, 3rd most verbose quartile of politicians.}
+	\label{fig: Verbosity_6}
 \begin{adjustbox}{width=\linewidth, center}
 	\begin{tabular}{lllll}
 	\toprule
@@ -434,11 +436,11 @@
 	\end{tabular}
 	
 \end{adjustbox}
-	\caption{RDD parameters for aggregation on verbosity quartiles, excluding outliers, 3rd most verbose quartile of politicians.}
-	\label{fig: Verbosity_6}
-\end{table}
+	\end{table}
 
 \begin{table}[h]\centering
+\caption{RDD parameters for aggregation on verbosity quartiles, least verbose quartile of politicians.}
+	\label{fig: Verbosity_7}
 \begin{adjustbox}{width=\linewidth, center}
 	\begin{tabular}{lllll}
 	\toprule
@@ -453,18 +455,18 @@
 	Tentativeness         &       0.7(-1.5, 2.9) &  -0.2(-3.7, 3.3) &   -0.02(-0.06, 0.03) &  -0.002(-0.09, 0.09) \\
 	Certainty             &       1.2(-2.1, 4.6) &   2.5(-2.9, 7.8) &  -0.002(-0.07, 0.07) &    -0.08(-0.2, 0.06) \\
 	Swearing (empath)     &   -1.9*(-3.7, -0.07) &   1.5(-1.4, 4.4) &   -0.02(-0.06, 0.02) &   0.001(-0.07, 0.08) \\
-	science               &       4***(1.6, 6.4) &  -3.3(-7.2, 0.6) &    0.04(-0.008, 0.1) &    -0.05(-0.1, 0.05) \\
-	Neg. Emotion (empath) &  -2.3***(-3.6, -0.9) &     1(-1.1, 3.2) &  -0.02(-0.05, 0.005) &    0.02(-0.04, 0.08) \\
+	science               &        4**(1.6, 6.4) &  -3.3(-7.2, 0.6) &    0.04(-0.008, 0.1) &    -0.05(-0.1, 0.05) \\
+	Neg. Emotion (empath) &   -2.3**(-3.6, -0.9) &     1(-1.1, 3.2) &  -0.02(-0.05, 0.005) &    0.02(-0.04, 0.08) \\
 	Pos. Emotion (empath) &      2.5**(0.7, 4.3) &   0.5(-2.4, 3.4) &    0.02(-0.02, 0.06) &    -0.06(-0.1, 0.01) \\
 	\bottomrule
 	\end{tabular}
 	
 \end{adjustbox}
-	\caption{RDD parameters for aggregation on verbosity quartiles, least verbose quartile of politicians.}
-	\label{fig: Verbosity_7}
-\end{table}
+	\end{table}
 
 \begin{table}[h]\centering
+\caption{RDD parameters for aggregation on verbosity quartiles, excluding outliers, least verbose quartile of politicians.}
+	\label{fig: Verbosity_8}
 \begin{adjustbox}{width=\linewidth, center}
 	\begin{tabular}{lllll}
 	\toprule
@@ -472,7 +474,7 @@
 	\midrule
 	Positive Emotions     &       0.8(-0.1, 1.7) &     -0.6(-2.1, 1) &   0.003(-0.02, 0.02) &  -0.003(-0.05, 0.04) \\
 	Negative Emotions     &  -2.8***(-3.5, -2.2) &   -0.9(-2.3, 0.4) &  -0.003(-0.02, 0.01) &   0.03(-0.006, 0.06) \\
-	Anxiety               &  -1.7***(-2.7, -0.7) &    0.2(-1.3, 1.6) &   0.002(-0.02, 0.02) &  -0.003(-0.04, 0.03) \\
+	Anxiety               &   -1.7**(-2.7, -0.7) &    0.2(-1.3, 1.6) &   0.002(-0.02, 0.02) &  -0.003(-0.04, 0.03) \\
 	Anger                 &  -2.6***(-3.5, -1.7) &   0.06(-1.3, 1.4) &   0.004(-0.01, 0.02) &  -0.001(-0.03, 0.03) \\
 	Sadness               &  -1.7***(-2.5, -0.9) &   1.1(-0.09, 2.3) &  -0.01(-0.03, 0.008) &   -0.02(-0.05, 0.02) \\
 	Swearing Terms        &    -1.4***(-2, -0.8) &    0.2(-0.9, 1.3) &  -0.003(-0.02, 0.01) &  -0.004(-0.03, 0.02) \\
@@ -480,17 +482,17 @@
 	Certainty             &       0.3(-1.1, 1.6) &     -0.8(-2.7, 1) &   0.001(-0.03, 0.03) &      -0(-0.05, 0.05) \\
 	Swearing (empath)     &   -1.3**(-2.2, -0.5) &   -0.2(-1.7, 1.4) &  -0.006(-0.02, 0.01) &   0.005(-0.03, 0.04) \\
 	science               &     2.3***(1.3, 3.2) &     -0.4(-2, 1.2) &   0.02(-0.002, 0.04) &   -0.01(-0.06, 0.03) \\
-	Neg. Emotion (empath) &  -1.1***(-1.7, -0.4) &   -0.5(-1.5, 0.5) &   0.004(-0.01, 0.02) &  -0.008(-0.04, 0.02) \\
-	Pos. Emotion (empath) &     1.4***(0.6, 2.3) &  -0.04(-1.8, 1.8) &  0.009(-0.008, 0.03) &   -0.03(-0.08, 0.02) \\
+	Neg. Emotion (empath) &   -1.1**(-1.7, -0.4) &   -0.5(-1.5, 0.5) &   0.004(-0.01, 0.02) &  -0.008(-0.04, 0.02) \\
+	Pos. Emotion (empath) &      1.4**(0.6, 2.3) &  -0.04(-1.8, 1.8) &  0.009(-0.008, 0.03) &   -0.03(-0.08, 0.02) \\
 	\bottomrule
 	\end{tabular}
 	
 \end{adjustbox}
-	\caption{RDD parameters for aggregation on verbosity quartiles, excluding outliers, least verbose quartile of politicians.}
-	\label{fig: Verbosity_8}
-\end{table}
+	\end{table}
 
 \begin{table}[h]\centering
+\caption{The most common 15 words for each sentiment category, before 15 June 2015. Bold values deviate from the other period by more than one percentage point.}
+	\label{fig: before_1}
 \begin{adjustbox}{width=\linewidth, center}
 	\begin{tabular}{lllllllll}
 	\toprule
@@ -518,11 +520,11 @@
 	\end{tabular}
 	
 \end{adjustbox}
-	\caption{The most common 15 words for each sentiment category, before 15 June 2015. Bold values deviate from the other period by more than one percentage point.}
-	\label{fig: before_1}
-\end{table}
+	\end{table}
 
 \begin{table}[h]\centering
+\caption{The most common 15 words for each sentiment category, after 15 June 2015. Bold values deviate from the other period by more than one percentage point.}
+	\label{fig: after_1}
 \begin{adjustbox}{width=\linewidth, center}
 	\begin{tabular}{lllllllll}
 	\toprule
@@ -550,11 +552,11 @@
 	\end{tabular}
 	
 \end{adjustbox}
-	\caption{The most common 15 words for each sentiment category, after 15 June 2015. Bold values deviate from the other period by more than one percentage point.}
-	\label{fig: after_1}
-\end{table}
+	\end{table}
 
 \begin{table}[h]\centering
+\caption{Kullback-Leibler Divergence for the word distribution within the Categories, before and after 15 June 2015.}
+	\label{fig: Kullback_1}
 	\begin{tabular}{lr}
 	\toprule
 	{} &  KL Divergence \\
@@ -570,7 +572,5 @@
 	\bottomrule
 	\end{tabular}
 	
-\caption{Kullback-Leibler Divergence for the word distribution within the Categories, before and after 15 June 2015.}
-	\label{fig: Kullback_1}
 \end{table}
 
