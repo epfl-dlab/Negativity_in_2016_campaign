@@ -42,6 +42,8 @@ def make_table(file: Path, caption: str, label: str) -> str:
 
     label = ''.join(letter for letter in label if (letter not in r'$\\'))
     txt = r'\begin{table}[h]\centering' + '\n'
+    txt += r'\caption{' + caption + '}\n\t'
+    txt += r'\label{fig: ' + label + '}' + '\n'
     if adjustbox:
         txt += r'\begin{adjustbox}{width=\linewidth, center}' + '\n'
 
@@ -50,8 +52,6 @@ def make_table(file: Path, caption: str, label: str) -> str:
 
     if adjustbox:
         txt += r'\end{adjustbox}' + '\n\t'
-    txt += r'\caption{' + caption + '}\n\t'
-    txt += r'\label{fig: ' + label + '}' + '\n'
     txt += r'\end{table}' + '\n\n'
     return txt
 

@@ -73,12 +73,17 @@ def get_fig_caption(name: str, kind: str, is_outlier: bool) -> str:
 
 def get_feature_name(name: str):
     name = re.sub('.pdf', '', name)
+    if name in ['liwc_Certain', 'liwc_Tentat', 'empath_Science']:
+        return None  # Ignore these
     try:
         return NAMES[name]
     except KeyError:
         pass
     if name == 'negative_grid':
-        return 'Negative Emotions'
+        return None  # Replaced by the negative language
+        # return 'Negative Emotions'
+    elif name == 'negative_and_swear_grid':
+        return 'Negative Language'
     elif name == 'scatter_grid':
         return 'Raw Sentiment Scores'
     return None
