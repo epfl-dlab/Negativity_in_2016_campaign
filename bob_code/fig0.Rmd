@@ -1,0 +1,39 @@
+---
+title: "R Notebook"
+output: html_notebook
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r}
+get_month_idx <- function(year, month) {
+  (year-2008)*12 + month
+}
+
+liwc <- read.csv('../data/aggregates/QuotationAggregation.csv')
+liwc$month_idx <- (liwc$year-2008)*12 + liwc$month
+
+presidents <- read.csv('../data/aggregates/presidents.csv')
+presidents$month_idx <- get_month_idx(presidents$year, presidents$month)
+obama <- presidents[presidents$qid=='Q76',]
+trump <- presidents[presidents$qid=='Q22686',]
+
+discont <- get_month_idx(2015, 6)
+zeroes <- rep(0, nrow(liwc))
+frac_trump <- trump$numQuotes / (obama$numQuotes + trump$numQuotes)
+
+par(mar=c(4.5, 4.5, 1, 4.5))
+plot(trump$month_idx, frac_trump, type='l', bty='n', col=NA, axes=FALSE, xlab='', ylab='')
+axis(1, pos=0); mtext('Month', 1, line=3)
+col <- rgb(1,0,0,0.4)
+axis(4, col=col, col.axis=col); mtext('Fraction Trump vs. Obama', 4, line=3, col=col)
+rect(trump$month_idx-0.5, zeroes, trump$month_idx+0.5, frac_trump, col=rgb(1,0,0,0.2), border=NA)
+rect(trump$month_idx-0.5, frac_trump, trump$month_idx+0.5, 1-zeroes, col=rgb(0,0,1,0.2), border=NA)
+par(new=TRUE)
+col <- 'black'
+plot(liwc$month_idx, liwc$liwc_Negemo, type='l', col=col, xlab='', ylab='', bty='n', lwd=3, axes=FALSE,
+     ylim=c(-2.2, 5.2), panel.first=abline(v=discont, lwd=2, col='red'))
+axis(2, col=col, col.axis=col, at=-2:5); mtext('Fraction negative emotion words', 2, line=3, col=col)
+text(discont+1, -1, "June 2015:\nBeginning of Trump's primary campaign", col='red', adj=0)
+```
+
