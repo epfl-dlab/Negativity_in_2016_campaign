@@ -162,7 +162,7 @@ class RDD:
 
         closest = np.argmin(np.abs(self.data['time_delta'].values - delta))
         diff = self.data['time_delta'].values[closest] - delta
-        approx_days = 30 * diff
+        approx_days = int(30 * diff)
         return self.data.date[closest] + relativedelta(days=approx_days)
 
     def _get_rdd_plot_data(self, feature: str) -> Tuple[np.array, np.array]:
@@ -286,7 +286,8 @@ class RDD:
         s = kwargs.get('s', s)
         scatter_color = 'tab:grey' if kwargs.get('lean', False) else 'black'  # Default colors
         scatter_color = kwargs.get('scatter_color', scatter_color)
-        timeLinePlot(self.data.date, self.data[feature], ax=ax, snsargs={'s': s, 'color': scatter_color}, kind='scatter')
+        timeLinePlot(self.data.date, self.data[feature], ax=ax, snsargs={'s': s, 'color': scatter_color}, kind='scatter',
+                     includeElections=kwargs.get('includeElections', True))
 
         # RDD
         linewidth = 3 if kwargs.get('lean') else 5
@@ -296,7 +297,8 @@ class RDD:
         for i in range(len(dates_rdd) // 2):
             timeLinePlot([dates_rdd[2 * i], dates_rdd[2 * i + 1]], [Y_rdd[2 * i], Y_rdd[2 * i + 1]], ax=ax,
                          snsargs={'label': kwargs.get('label', 'RDD') if i == 0 else '', 'color': color, 'linewidth': linewidth},
-                         timeDelta='1y')
+                         timeDelta='1y',
+                         includeElections=kwargs.get('includeElections', True))
 
         # RDD Confidence
         if not kwargs.get('lean', False) and kwargs.get('ci', True):
@@ -315,7 +317,8 @@ class RDD:
             dates_lin = [self._get_approx_date(x) for x in X_lin]
             timeLinePlot(dates_lin, Y_lin, ax=ax, clean_dates=False,
                          snsargs={'label': 'Linear Regression', 'color': 'black', 'linewidth': 2, 'linestyle': '-.'},
-                         timeDelta='1y')
+                         timeDelta='1y',
+                         includeElections=kwargs.get('includeElections', True))
 
         # Performance Annotations
         if kwargs.get('annotate', True):
@@ -361,6 +364,11 @@ class RDD:
             ax.set_ylim(min(data_values) - 1, max(data_values) + 1)
             plt.legend(fontsize=FONTSIZE, loc='lower left', framealpha=1, fancybox=False, ncol=2)
             plt.tight_layout()
+
+        if kwargs.get('ylabel', None) is not None:
+            ax.set_ylabel(kwargs.get('ylabel'), fontsize=FONTSIZE)
+
+        ax.set_xlim(13926.0, 18578.0)
 
         return fig, ax
 

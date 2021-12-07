@@ -17,13 +17,13 @@ def _election_tuesday(year: int) -> datetime:
     return first_monday + timedelta(1)
 
 
-ELECTION_TUESDAYS = [_election_tuesday(y) for y in range(2008, 2021)]
+ELECTION_TUESDAYS = [_election_tuesday(y) for y in range(2008, 2020)]
 PRESIDENTIAL_ELECTIONS = ELECTION_TUESDAYS[::4]
 
 NANO = 1e-9
 ONE_COL_FIGSIZE = [8.7, 5]
 TWO_COL_FIGSIZE = [17.8, 8]
-NARROW_TWO_COL_FIGSIZE = [17.8, 5]
+NARROW_TWO_COL_FIGSIZE = [17.8, 4.5]
 
 
 def timeLinePlot(x, y,
@@ -132,10 +132,10 @@ def timeLinePlot(x, y,
     if bool(kwargs.get('includeElections', True)):
         for electionDay in ELECTION_TUESDAYS:
             if electionDay in PRESIDENTIAL_ELECTIONS:
-                ax.axvline(x=electionDay, linewidth=2, c='grey', linestyle='dotted')
+                ax.axvline(x=electionDay, linewidth=2, c='grey', linestyle='dotted', alpha=0.5)
             else:
                 if kwargs.get('includeElections') == 'all':
-                    ax.axvline(x=electionDay, linewidth=1, c='grey', linestyle='dotted')
+                    ax.axvline(x=electionDay, linewidth=1, c='grey', linestyle='dotted', alpha=0.5)
 
     # User defined inputs
     with warnings.catch_warnings():
@@ -146,7 +146,7 @@ def timeLinePlot(x, y,
             except AttributeError:
                 pass
 
-    fig.autofmt_xdate()
+    fig.autofmt_xdate(rotation=90, ha='left')
     return fig, ax
 
 
