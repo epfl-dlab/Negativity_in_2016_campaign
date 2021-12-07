@@ -107,7 +107,6 @@ def getPoliticians(df: DataFrame, jobIDs: List[str], save_as: str = None) -> Dat
 def getQuotesFromSpeakers(df: DataFrame, speakers: DataFrame) -> DataFrame:
     """
     Narrows down the quotation dataframe to quotations uttered by one of the speakers in the speaker Dataframe.
-    To achieve this, first
     """
     df = df.select('*', f.explode('qids').alias('qid')).drop('qids')
     return df.join(speakers.select('qid'), on='qid')
