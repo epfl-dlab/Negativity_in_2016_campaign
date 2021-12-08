@@ -21,7 +21,8 @@ import sys
 from typing import Dict, List, Tuple
 
 sys.path.append(str(Path(__file__).parent.parent))  # Only works when keeping the original repo structure
-from utils.plots import saveFigure, timeLinePlot, ONE_COL_FIGSIZE, TWO_COL_FIGSIZE, NARROW_TWO_COL_FIGSIZE, PRESIDENTIAL_ELECTIONS
+from utils.plots import saveFigure, timeLinePlot, ONE_COL_FIGSIZE, TWO_COL_FIGSIZE, NARROW_TWO_COL_FIGSIZE, \
+    NARROW_NARROW_TWO_COL_FIGSIZE, PRESIDENTIAL_ELECTIONS
 from analysis.RDD import RDD, aicc, KINK
 
 parser = argparse.ArgumentParser()
@@ -30,8 +31,8 @@ parser.add_argument('--img', help='Folder to write images to.', required=True)
 parser.add_argument('--SI', help='SI material', required=False)
 
 FONTSIZE = 14
-CORE_FEATURES = ['liwc_Negemo', 'liwc_Anger', 'liwc_Anx', 'liwc_Sad']
-LIWC_FEATURES = CORE_FEATURES + ['liwc_Posemo', 'liwc_Swear']
+CORE_FEATURES = ['liwc_Negemo', 'liwc_Anger', 'liwc_Anx', 'liwc_Sad', 'liwc_Swear']
+LIWC_FEATURES = CORE_FEATURES + ['liwc_Posemo']
 NAMES = {
     'liwc_Negemo': 'Negative emotion',
     'liwc_Anx': 'Anxiety',
@@ -77,18 +78,13 @@ PARTY_STYLES = {
     'democrats': {'color': 'tab:blue', 'linewidth': 2.5, 'scatter_color': 'tab:blue', 'label': 'Democrats'},
     'republicans': {'color': 'tab:red', 'linewidth': 2.5, 'scatter_color': 'tab:red', 'label': 'Republicans'}
 }
-POLITICIAN_IDS = {
+POLITICIAN_IDS = {  # Make Individual Plots for these
     'Q76': 'Barack Obama',
     'Q6294': 'Hillary Clinton',
     'Q22686': 'Donald Trump',
-    'Q69319': 'John Kasich',
-    'Q221997': 'Jeb Bush',
-    'Q324546': 'Marco Rubio',
-    'Q359442': 'Bernie Sanders ',
-    'Q816459': 'Ben Carson',
-    'Q2036942': 'Ted Cruz'
+    'Q2036942': 'Ted Cruz'  # TODO: Missing
 }
-PROMINENCE_IDS = {
+PROMINENCE_IDS = {  # Annotate them in score-vs-verbosity plots
     'Q76': 'Barack Obama',
     'Q22686': 'Donald Trump',
     'Q4496': 'Mitt Romney',
@@ -138,8 +134,6 @@ def _scatter_only(ax: plt.axis, feature: str, model: RDD, color: str, s: int = 2
 
 
 def _grid_annotate(ax: plt.axis, model: RDD, feature: str):
-    # ax.set_title(title, fontsize=FONTSIZE, fontweight='bold')
-
     txt = r"{\mathrm{adj}}"
     r2 = f'$R^2_{txt}$={model.rdd[feature].loc["r2_adj"]:.2f}'
     params = '\n'.join([
@@ -278,6 +272,35 @@ def grid(models: Dict[str, RDD], ncols: int, nrows: int, features: List[str], st
     return fig, axs
 
 
+def scatter_grid(nrows, ncols, model, features, ylims=None, figsize=TWO_COL_FIGSIZE):
+    fig, axs = plt.subplots(figsize=TWO_COL_FIGSIZE, ncols=ncols, nrows=nrows, sharex='all', sharey='all', squeeze=False)
+    ymin, ymax = np.inf, -np.inf
+    for i, feature in enumerate(features):
+        ROW = i // ncols
+        COL = i % ncols
+        ax = axs[ROW][COL]
+        _scatter_only(ax, feature, model, STYLES[feature]['color'])
+        ax.set_title(NAMES[feature], fontweight='bold', fontsize=FONTSIZE)
+        ymin = min(ymin, min(model.data[feature]))
+        ymax = max(ymax, max(model.data[feature]))
+        if COL == 0:
+            ax.set_ylabel('Pre-campaign z-scores', fontsize=FONTSIZE)
+        if ncols * nrows != 1:
+            ax.set_title(string.ascii_lowercase[i] + ')', fontfamily='serif', loc='left', fontsize=FONTSIZE + 4)
+
+    ydiff = ymax - ymin
+    for row in axs:
+        for ax in row:
+            ax.tick_params(axis='both', which='major', labelsize=FONTSIZE)
+            ax.set_ylim(ymin - 0.25 * ydiff, ymax + 0.25 * ydiff)
+            if ylims is not None:
+                ax.set_ylim(ylims[0], ylims[1])
+
+    fig.autofmt_xdate(rotation=90, ha='left')
+    plt.minorticks_off()
+    return fig, axs
+
+
 def basic_model_plots(model_file: Path, base: Path, ylims: Tuple[float, float] = None):
     """
     Creates a single plot for every feature the RDD was fitted on.
@@ -291,33 +314,23 @@ def basic_model_plots(model_file: Path, base: Path, ylims: Tuple[float, float] =
     model = pickle.load(model_file.open('rb'))
 
     # 5x grid
-    fig, axs = grid({'agg': model}, 5, 1, CORE_FEATURES + ['liwc_Swear'], STYLES, grid_annotate=True,
+    fig, axs = grid({'agg': model}, 5, 1, CORE_FEATURES, STYLES, grid_annotate=True,
                     ylabel='Pre-campaign z-scores')
     saveFigure(fig, base.joinpath('negative_and_swear_grid'))
 
     # 2 x 3 Grid only scatter
-    fig, axs = plt.subplots(figsize=TWO_COL_FIGSIZE, ncols=3, nrows=2, sharex='all', sharey='all')
-    ymin, ymax = np.inf, -np.inf
-    for i, feature in enumerate(LIWC_FEATURES):
-        COL = i % 2
-        ROW = i // 2
-        ax = axs[COL][ROW]
-        _scatter_only(ax, feature, model, 'black')
-        ax.set_title(NAMES[feature], fontweight='bold', fontsize=FONTSIZE)
-        ymin = min(ymin, min(model.data[feature]))
-        ymax = max(ymax, max(model.data[feature]))
+    fig, axs = scatter_grid(2, 3, model, LIWC_FEATURES, ylims)
+    saveFigure(fig, base.joinpath('2x3_scatter_grid'))
+    plt.close()
 
-    ydiff = ymax - ymin
-    for row in axs:
-        for ax in row:
-            ax.tick_params(axis='both', which='major', labelsize=FONTSIZE)
-            ax.set_ylim(ymin - 0.25 * ydiff, ymax + 0.25 * ydiff)
-            if ylims is not None:
-                ax.set_ylim(ylims[0], ylims[1])
+    # Negative Grid only scatter
+    fig, axs = scatter_grid(1, 5, model, CORE_FEATURES, ylims, figsize=NARROW_NARROW_TWO_COL_FIGSIZE)
+    saveFigure(fig, base.joinpath('negative_scatter_grid'))
+    plt.close()
 
-    fig.autofmt_xdate(rotation=75)
-    plt.minorticks_off()
-    saveFigure(fig, base.joinpath('scatter_grid'))
+    # Negative Grid only posemo
+    fig, axs = scatter_grid(1, 1, model, ['liwc_Posemo'], ylims)
+    saveFigure(fig, base.joinpath('posemo_scatter'))
     plt.close()
 
 
@@ -346,8 +359,9 @@ def outlier_plots(model_file: Path, store: Path):
         baseStyle[k]['label'] = 'Without Outliers'
         baseStyle[k]['scatter_color'] = 'tab:grey'
 
-    fig, axs = grid(models, 5, 1, CORE_FEATURES + ['liwc_Swear'],
-                    {'With Outliers': outlierStyle, 'Without Outliers': baseStyle}, mean_adapt=True, legend=True)
+    fig, axs = grid(models, 5, 1, CORE_FEATURES,
+                    {'With Outliers': outlierStyle, 'Without Outliers': baseStyle}, mean_adapt=True, legend=True,
+                    ylabel='Pre-campaign z-scores')
 
     saveFigure(fig, store.joinpath('negative_and_swear_grid'))
 
@@ -411,9 +425,9 @@ def verbosity_vs_parameter(folder: Path, base: Path, kind: str, alpha_CI: float 
     verbosity_df = verbosity_df[verbosity_df.QID.isin(names)]
     plot_data = {
         feature: pd.DataFrame(columns=names,
-                              index=['aCORE_FEATURESlpha', 'beta', 'verbosity', 'alpha_low', 'alpha_high', 'beta_low',
+                              index=['alpha', 'beta', 'verbosity', 'alpha_low', 'alpha_high', 'beta_low',
                                      'beta_high'])
-        for feature in CORE_FEATURES + ['liwc_Swear']
+        for feature in CORE_FEATURES
     }
 
     for speaker in folder.iterdir():
@@ -437,11 +451,10 @@ def verbosity_vs_parameter(folder: Path, base: Path, kind: str, alpha_CI: float 
             plot_data[feature].at['beta', qid] = beta
             plot_data[feature].at['beta_low', qid] = beta_low
             plot_data[feature].at['beta_high', qid] = beta_high
-            plot_data[feature].at['verbosity', qid] = verbosity_df[verbosity_df.QID == qid]['Unique Quotations'].values[
-                0]
+            plot_data[feature].at['verbosity', qid] = verbosity_df[verbosity_df.QID == qid]['Unique Quotations'].values[0]
 
     for param in kwargs.get('params', ('alpha', 'beta')):
-        if kwargs.get('axs' is None):
+        if kwargs.get('axs', None) is None:
             fig, axs = plt.subplots(figsize=NARROW_TWO_COL_FIGSIZE, ncols=5, nrows=1, sharex='all', sharey='all')
         else:
             assert kwargs.get('params', None) is not None
@@ -497,7 +510,7 @@ def verbosity_vs_parameter(folder: Path, base: Path, kind: str, alpha_CI: float 
             if i > 0:
                 ax.tick_params(axis='y', which='both', left=False, right=False)
             else:
-                labelText = 'without individuals.' if kind == 'ablation' else 'for individuals only'
+                labelText = 'without individuals' if kind == 'ablation' else 'for individuals only'
                 ax.set_ylabel(r'$\{}$ {}'.format(param, labelText))
                 if (param == 'alpha') and (kind == 'individual'):
                     ax.set_ylim(-20, 20)
@@ -533,11 +546,11 @@ def ablation_plots(folder: Path, base: Path):
     base: Base folder where to store figures in
     """
     verbosity_vs_parameter(folder, base, 'ablation', alpha_CI=0.17)
-    fig, axs = plt.subplots(nrows=2, ncols=5, figsize=TWO_COL_FIGSIZE, sharex='all', sharey='row')
-    verbosity_vs_parameter(folder, base, 'ablation', alpha_CI=0.17, params=['alpha'], axs=axs[0])
-    verbosity_vs_parameter(folder.parent.joinpath('Individuals'), base.parent.joinpath('Individuals'),
-                           'individual', alpha_CI=0.17, params=['alpha'], axs=axs[1], prefix='fghijklmno')
-    saveFigure(fig, base.parent.joinpath('combinedIndividual').joinpath('alpha.pdf'))
+    # fig, axs = plt.subplots(nrows=2, ncols=5, figsize=TWO_COL_FIGSIZE, sharex='all', sharey='row')
+    # verbosity_vs_parameter(folder, base, 'ablation', alpha_CI=0.17, params=['alpha'], axs=axs[0])
+    # verbosity_vs_parameter(folder.parent.joinpath('Individuals'), base.parent.joinpath('Individuals'),
+    #                        'individual', alpha_CI=0.17, params=['alpha'], axs=axs[1], prefix='fghijklmno')
+    # saveFigure(fig, base.parent.joinpath('combinedIndividual').joinpath('alpha.pdf'))
 
 
 def individuals(folder: Path, base: Path):
@@ -548,8 +561,7 @@ def individuals(folder: Path, base: Path):
     folder: Parent folder, containing RDDs fitted on individual aggregates
     base: Base folder to store figures in
     """
-    print('not doing plots for individual speakers currently!')
-    # individual_plots(folder, base)
+    individual_plots(folder, base)
     verbosity_vs_parameter(folder, base, 'individual')
 
 
@@ -625,7 +637,7 @@ def party_plots(folder: Path, base: Path):
         plt.close()
 
     # Grid
-    fig, axs = grid(models, 5, 1, CORE_FEATURES + ['liwc_Swear'], PARTY_STYLES, legend=True)
+    fig, axs = grid(models, 5, 1, CORE_FEATURES, PARTY_STYLES, legend=True)
     saveFigure(fig, base.joinpath('grid'))
     plt.close()
 
@@ -655,7 +667,7 @@ def verbosity_plots(folder: Path, base: Path, verbosity_groups: Tuple[int] = (0,
 
     lower, upper = (13926.0, 18578.0)  # Hard coded numeric Quotebank Date limits + margin
     for feature in features:
-        fig, axs = plt.subplots(figsize=NARROW_TWO_COL_FIGSIZE, ncols=4)
+        fig, axs = plt.subplots(figsize=NARROW_TWO_COL_FIGSIZE, ncols=4, sharex='all', sharey='all')
         y_min = np.Inf
         y_max = - np.Inf
 
@@ -683,13 +695,16 @@ def verbosity_plots(folder: Path, base: Path, verbosity_groups: Tuple[int] = (0,
                     horizontalalignment='left', bbox=box_props)
             ax.text(0.97, 0.9725, params, transform=ax.transAxes, fontsize=FONTSIZE, verticalalignment='top',
                     horizontalalignment='right', bbox=box_props)
+            if verbosity == 0:
+                ax.set_ylabel('Pre-campaign z-scores', fontsize=FONTSIZE)
+            _grid_annotate(ax, model, feature)
 
         y_diff = y_max - y_min
         for ax in axs:
             ax.set_xlim(lower, upper)
             ax.set_ylim(y_min - y_diff, y_max + y_diff)
 
-        fig.autofmt_xdate(rotation=75)
+        fig.autofmt_xdate(rotation=90, ha='left')
         plt.minorticks_off()
 
         saveFigure(fig, base.joinpath(feature))
@@ -749,7 +764,7 @@ def attribute_plots(model_path: Path, base: Path):
             ax.set_xticks([-0.05, 0, 0.05])
 
         if att in annotate:
-            ax.set_xlabel('Pre-campaign SD', fontsize=FONTSIZE - 2)
+            ax.set_xlabel('Pre-campaign z-scores', fontsize=FONTSIZE - 2)
             left, right = annotate[att]
             ax.text(x=0.05, y=0.9, s=r'{}$\longleftarrow$'.format(left), fontsize=FONTSIZE - 2, ha='left',
                     va='bottom', transform=ax.transAxes)
@@ -759,7 +774,7 @@ def attribute_plots(model_path: Path, base: Path):
         ax.tick_params(axis='both', labelsize=FONTSIZE - 2)
         ax.set_title(titles[att], fontsize=FONTSIZE - 2, fontweight='bold')
         ax.set_title(string.ascii_lowercase[i] + ')', fontfamily='serif', loc='left', fontsize=FONTSIZE + 4)
-        ax.axvline(x=0, linestyle='dashed', color='black', linewidth=0.5)  # TODO: Distance between dashes
+        ax.axvline(x=0, linestyle='dashed', color='black', linewidth=0.5)
         lower, upper = ax.get_ylim()
         ax.set_ylim(lower - .5, upper + .5)
 
@@ -795,6 +810,7 @@ def plot_quantities(data_path: Path, base: Path):
                                ax=axs[i])
 
     saveFigure(fig, base.joinpath('quantities.pdf'))
+    plt.close()
 
 
 def RDD_kink_performance(data_path: Path, base: Path):
@@ -803,19 +819,16 @@ def RDD_kink_performance(data_path: Path, base: Path):
     """
     data = pickle.load(data_path.open('rb'))
     dates = list(data.keys())
+    ylabeltext = r"$R^2_{\mathrm{adj}}$"
     fig, ax = plt.subplots(figsize=TWO_COL_FIGSIZE)
-
     rdd_style = deepcopy(STYLES)
-    rdd_style['liwc_Anx']['linestyle'] = '--'
-    rdd_style['liwc_Anger']['linestyle'] = '-.'
-    rdd_style['liwc_Sad']['linestyle'] = 'dotted'
     for f in rdd_style:
         try:
             del rdd_style[f]['scatter_color']
         except KeyError:
             pass
 
-    for feature in CORE_FEATURES + ['liwc_Swear']:
+    for feature in CORE_FEATURES:
         timeLinePlot(
             x=dates,
             y=[data[dt][feature]['r2_adjust'] for dt in dates],
@@ -824,7 +837,8 @@ def RDD_kink_performance(data_path: Path, base: Path):
             includeElections=False
         )
     ax.axvline(mdates.date2num(KINK), color='black', linestyle='--')
-    plt.legend(fontsize=FONTSIZE - 2, loc='upper right', framealpha=1, fancybox=False, ncol=3)
+    plt.legend(fontsize=FONTSIZE, loc='upper right', framealpha=1, fancybox=False, ncol=3)
+    ax.set_ylabel(ylabeltext, fontsize=FONTSIZE)
     saveFigure(fig, base.joinpath('r2_adj'))
 
     fig, ax = plt.subplots(figsize=TWO_COL_FIGSIZE)
@@ -836,6 +850,7 @@ def RDD_kink_performance(data_path: Path, base: Path):
         includeElections=False)
     ax.axvline(mdates.date2num(KINK), color='black', linestyle='--')
     plt.legend(fontsize=FONTSIZE - 2, loc='upper right', framealpha=1, fancybox=False, ncol=3)
+    ax.set_ylabel(ylabeltext, fontsize=FONTSIZE)
     saveFigure(fig, base.joinpath('r2_adj_posemo'))
     plt.close('all')
 
@@ -852,6 +867,7 @@ def aggregation_overview(QuotationAggregation_RDD: RDD, SpeakerAggregation_RDD: 
     republicans: RDD model of the quotation aggregation for republicans
     folder: Where to store the plot
     """
+    print('Large Aggregation Grid')
     democratStyle = deepcopy(STYLES)
     republicanStyle = deepcopy(STYLES)
     for key in republicanStyle:
@@ -869,12 +885,12 @@ def aggregation_overview(QuotationAggregation_RDD: RDD, SpeakerAggregation_RDD: 
     speak = axs[1, :]
     party = axs[2, :]
 
-    grid({'agg': QuotationAggregation_RDD}, 5, 1, CORE_FEATURES + ['liwc_Swear'], STYLES, grid_annotate=True,
+    grid({'agg': QuotationAggregation_RDD}, 5, 1, CORE_FEATURES, STYLES, grid_annotate=True,
          ylabel='Pre-campaign z-scores', axs=quot, fontweight='normal')
-    grid({'agg': SpeakerAggregation_RDD}, 5, 1, CORE_FEATURES + ['liwc_Swear'], STYLES, grid_annotate=True,
+    grid({'agg': SpeakerAggregation_RDD}, 5, 1, CORE_FEATURES, STYLES, grid_annotate=True,
          ylabel='Pre-campaign z-scores', axs=speak, prefix=string.ascii_lowercase[5:], fontweight='normal')
 
-    grid({'democrats': democrats, 'republicans': republicans}, 5, 1, CORE_FEATURES + ['liwc_Swear'], partyStyle,
+    grid({'democrats': democrats, 'republicans': republicans}, 5, 1, CORE_FEATURES, partyStyle,
          fontweight='normal',
          grid_annotate=False, ylabel='Pre-campaign z-scores', axs=party, prefix=string.ascii_lowercase[10:],
          legend=True)
@@ -887,10 +903,26 @@ def aggregation_overview(QuotationAggregation_RDD: RDD, SpeakerAggregation_RDD: 
                 ax.text(0.5, 1.14, txt[i], fontsize=FONTSIZE, fontweight='bold', va='center', ha='center',
                         transform=ax.transAxes)
 
-    saveFigure(fig, folder.joinpath('3x5_Grid.pdf'))
+    saveFigure(fig, folder.joinpath('Negativity.pdf'))
+
+    fig, axs = plt.subplots(ncols=3, nrows=1, figsize=NARROW_TWO_COL_FIGSIZE, sharex='all', sharey='all')
+    grid({'agg': QuotationAggregation_RDD}, 1, 1, ['liwc_Posemo'], STYLES, grid_annotate=True,
+         ylabel='Pre-campaign z-scores', axs=[axs[0]], fontweight='normal')
+    grid({'agg': SpeakerAggregation_RDD}, 1, 1, ['liwc_Posemo'], STYLES, grid_annotate=True,
+         axs=[axs[1]], prefix=['b'], fontweight='normal')
+    grid({'democrats': democrats, 'republicans': republicans}, 1, 1, ['liwc_Posemo'], partyStyle,
+         fontweight='normal',
+         grid_annotate=False, axs=[axs[2]], prefix=['c'], legend=True)
+    txt = ['Quote Aggregation', 'Speaker Aggregation', 'Quote Aggregation by Party']
+    for i, ax in enumerate(axs):
+        ax.set_ylim([-8, 8])
+        ax.text(0.5, 1.14, txt[i], fontsize=FONTSIZE, fontweight='bold', va='center', ha='center',
+                transform=ax.transAxes)
+
+    saveFigure(fig, folder.joinpath('Positive.pdf'))
 
 
-def main_figure(president_verbosity: pd.DataFrame, raw_negemo: pd.DataFrame, quoteAggregationRDD: RDD, folder: Path):
+def title_figure(president_verbosity: pd.DataFrame, raw_negemo: pd.DataFrame, quoteAggregationRDD: RDD, folder: Path):
     """
     Plots the raw liwc score of the negative emotion liwc category vs. the relative share of quotes
     uttered by Donald Trump vs Barack Obama
@@ -906,18 +938,20 @@ def main_figure(president_verbosity: pd.DataFrame, raw_negemo: pd.DataFrame, quo
             width, height = handlebox.width, handlebox.height
             patches = []
             for i, c in enumerate(orig_handle.colors):
-                patches.append(plt.Rectangle([width / len(orig_handle.colors) * i - handlebox.xdescent,
-                                              -handlebox.ydescent],
-                                             width / len(orig_handle.colors),
-                                             height,
-                                             facecolor=c,
-                                             edgecolor='none'))
+                patches.append(
+                    plt.Rectangle(
+                        (float(width / len(orig_handle.colors) * i - handlebox.xdescent), float(-handlebox.ydescent)),
+                        width / len(orig_handle.colors),
+                        height,
+                        facecolor=c,
+                        edgecolor='none'
+                    )
+                )
             patch = PatchCollection(patches, match_original=True)
 
             handlebox.add_artist(patch)
             return patch
-
-
+    print('Title Figure')
     dates = sorted(raw_negemo['date'].unique())
     shares = pd.DataFrame(data=None, columns=['trump', 'obama', 'total'],
                           index=dates)
@@ -972,13 +1006,6 @@ def main_figure(president_verbosity: pd.DataFrame, raw_negemo: pd.DataFrame, quo
     presidents.fill_between(mdates.date2num(dates), np.asarray(shares.trump / shares.total, dtype=float),
                             np.ones(len(dates)), color=colorObama, step='mid', zorder=0)
 
-    # presidents.vlines(x=1.07, ymin=0, ymax=1, transform=presidents.transAxes, color='tab:red', alpha=.35, linewidth=15,
-    #                   clip_on=False, )
-    # Dashes parameter below is a bit weird, but pyplot doesn't take it in the proper format (d1, d2) for vlines - only
-    # possible option seems to provide it as (offset, (dashes-tuple))...
-    # presidents.vlines(x=1.07, ymin=0, ymax=1, transform=presidents.transAxes, linestyle='--', color='lightblue',
-    #                   alpha=1, linewidth=15, clip_on=False, dashes=(0, (2, 2)))
-
     for election in PRESIDENTIAL_ELECTIONS:
         left.axvline(x=election, linewidth=2, c='black', linestyle='dotted', zorder=1, alpha=.3)
     electionLines = Line2D([0], [0], linewidth=2, c='black', linestyle='dotted', alpha=.3)
@@ -1002,14 +1029,10 @@ def main_figure(president_verbosity: pd.DataFrame, raw_negemo: pd.DataFrame, quo
     alpha_val = quoteAggregationRDD.rdd['liwc_Negemo']['C(threshold)[T.1]']
     beta_0_val = quoteAggregationRDD.rdd['liwc_Negemo']['time_delta']
     beta_val = quoteAggregationRDD.rdd['liwc_Negemo']['C(threshold)[T.1]:time_delta']
-    # alpha_0 = dict(x=t_thresh + 180, y=0, dx=0, dy=alpha_0_val, color='green')
     alpha_0 = dict(x=t_thresh + 300, y=0, dx=0, dy=alpha_0_val, color='green')
-    # alpha_0_styling = dict(text=r'intercept $\mathbf{\alpha_0}$', fraction_dy=.3, x=t_thresh + 330, align='left')
     alpha_0_styling = dict(text=r'intercept $\mathbf{\alpha_0}$', fraction_dy=.5, x=t_thresh + 330, align='left')
-    # alpha = dict(x=t_thresh + 300, y=alpha_0_val, dx=0, dy=alpha_val, color='red')
-    alpha = dict(x=t_thresh, y=alpha_0_val, dx=0, dy=alpha_val, color='red')
-    # alpha_styling = dict(text=r'campaign offset $\mathbf{\alpha}$', fraction_dy=.15, x=t_thresh + 330, align='left')
-    alpha_styling = dict(text=r'campaign offset $\mathbf{\alpha}$', fraction_dy=.9, x=t_thresh - 50, align='right')
+    alpha = dict(x=t_thresh, y=alpha_0_val, dx=0, dy=alpha_val, color=(1, .65, 0))
+    alpha_styling = dict(text=r'campaign offset $\mathbf{\alpha}$', fraction_dy=.9, x=t_thresh - 60, align='right')
 
     def reverseDirection(d):
         ret = deepcopy(d)
@@ -1021,14 +1044,11 @@ def main_figure(president_verbosity: pd.DataFrame, raw_negemo: pd.DataFrame, quo
         return ret
 
     arrowStyle = dict(length_includes_head=True, linewidth=3, head_width=75, head_length=0.2, joinstyle='bevel', zorder=2)
-    # right.hlines([0, alpha_0['dy'], alpha['y'] + alpha['dy']], [t_thresh, t_thresh, t_thresh], [t_thresh + 180, t_thresh + 300, t_thresh + 300],
-    #              colors='black', linewidth=2)
-    right.hlines([0, alpha_0['dy']], [t_thresh, t_thresh], [t_thresh + 300, t_thresh + 300],
-                 colors='black', linewidth=2)
+    right.hlines([0, alpha_0['dy']], [t_thresh, t_thresh], [t_thresh + 300, t_thresh + 300], colors='black', linewidth=2)
     for style, param in zip([alpha_0_styling, alpha_styling], [alpha_0, alpha]):
         name = style['text']
         right.arrow(**param, **arrowStyle)
-        right.arrow(**reverseDirection(param), **arrowStyle)
+        # right.arrow(**reverseDirection(param), **arrowStyle)
         right.text(style['x'], param['y'] + style['fraction_dy'] * param['dy'], name, color=param['color'],
                    ha=style['align'], va='center', fontsize=FONTSIZE + 2, fontweight='bold')
 
@@ -1060,12 +1080,22 @@ def main_figure(president_verbosity: pd.DataFrame, raw_negemo: pd.DataFrame, quo
     col = PatchCollection(patches, facecolors=patchColor)
     right.add_collection(col)
 
+    equation = r"$y_t = \mathbf{\alpha_0} + \mathbf{\beta_0} \,t + \mathbf{\alpha} \,i_{t} + \mathbf{\beta} \,i_{t} \,t + \varepsilon_{t}$"
+    box_props = dict(boxstyle='round', facecolor='white', alpha=.5, ec='none')
+    right.text(0.5, 0.85, equation, transform=right.transAxes, fontsize=FONTSIZE + 2, verticalalignment='bottom', horizontalalignment='center', bbox=box_props)
+
+    old_ylim = right.get_ylim()
+    right.scatter(mdates.date2num(KINK), old_ylim[0], s=100, marker='X', color='tab:red', clip_on=False, zorder=100)
+    right.set_ylim(old_ylim)  # Prevent that scatter above moves the limit around
+    right.text(mdates.date2num(KINK) + 50, right.get_ylim()[0] + 0.15, '$t = 0$ (June 2015)', fontsize=FONTSIZE, color='tab:red')
+
+    right.set_xlim(*mdates.date2num([min(dates)]), *mdates.date2num([max(dates)]))
     right.axhline(y=0, linestyle='--', color='black', linewidth=0.8, zorder=0)
     right.get_legend().remove()
     plt.tight_layout()
 
-    plt.show()
     saveFigure(fig, folder.joinpath('Fig0.pdf'))
+    plt.close()
 
 
 def main():
@@ -1120,7 +1150,7 @@ def main():
         if quant.exists():
             plot_quantities(quant, si_img)
 
-    if all(p is not None for p in paths.values()) and False:  # TODO: Remove False
+    if all(p is not None for p in paths.values()):
         models = {key: pickle.load(paths[key].open('rb')) for key in paths}
         aggregation_overview(**models, folder=img)
 
@@ -1134,7 +1164,7 @@ def main():
                                 * pickle.load(aggregates.joinpath('std.pickle').open('rb'))['liwc_Negemo'] \
                                 + pickle.load(aggregates.joinpath('mean.pickle').open('rb'))[
                                     'liwc_Negemo']  # Restore the original liwc scores
-        main_figure(presidents, negemo, pickle.load(paths['QuotationAggregation_RDD'].open('rb')), img)
+        title_figure(presidents, negemo, pickle.load(paths['QuotationAggregation_RDD'].open('rb')), img)
 
 
 if __name__ == '__main__':
