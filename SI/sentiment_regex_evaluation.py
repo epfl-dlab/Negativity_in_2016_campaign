@@ -1,6 +1,5 @@
 import argparse
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
 from pathlib import Path
 import pickle
@@ -72,7 +71,7 @@ def evaluate_sentiment_patterns(counts: Dict, wordMap: Dict, categoryMap: Dict, 
     if ('after' not in counts) or ('before' not in counts):
         raise NotImplementedError("Evaluation only for available for a before and after category currently.")
     topTables = dict()
-    TOP_N = 15
+    TOP_N = 30
     for name, cnt in counts.items():
         #  Get the share of each word for each category
         tops = pd.DataFrame(index=[str(i+1) for i in range(TOP_N)] + ['Total nr Expressions', 'Total Matches'],
