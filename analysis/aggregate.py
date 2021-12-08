@@ -296,6 +296,9 @@ def main():
     agg = getScoresByGroups(df, ['party'])
     save(_df_postprocessing(agg, features, MEAN, STD), 'PartyAggregation')
 
+    agg = getScoresByGroups(df.filter(f.col('qid') != 'Q22686'), ['party'])
+    save(_df_postprocessing(agg, features, MEAN, STD), 'PartyAggregationWithoutTrump')
+
     agg = getScoresBySpeaker(df)
     save(_df_postprocessing(agg, features, MEAN, STD), 'SpeakerAggregation')
 
