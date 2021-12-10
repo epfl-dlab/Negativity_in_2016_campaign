@@ -77,11 +77,13 @@ def _prep_people(df: DataFrame) -> DataFrame:
     allPeople = df.withColumn('congress_member', (f.size('CIDs') > 0).cast('integer'))
     manual = allPeople \
         .filter(f.size('parties') > 1) \
-        .withColumn('tmp_party', __manual_party(f.col('qid')))
+        .withColumn('tmp_party', __manual_party(f.col('qid'))) \
+        .drop('parties')
 
     ret = allPeople \
         .filter((f.size('parties') == 1) & (f.size('genders') == 1)) \
-        .withColumn(f.explode('parties').alias('tmp_party')) \
+        .withColumn('tmp_party', f.explode('parties')) \
+        .drop('parties') \
         .union(manual) \
         .select('qid', 'congress_member', 'genders') \
         .select('*', f.explode('genders').alias('tmp_gender')) \
