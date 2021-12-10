@@ -75,8 +75,9 @@ def _prep_people(df: DataFrame) -> DataFrame:
     __manual_party = f.udf(lambda x: MANUAL_PARTY_MEMBERSHIP[x], StringType())
 
     allPeople = df.withColumn('congress_member', (f.size('CIDs') > 0).cast('integer'))
+    manualAssigned = list(MANUAL_PARTY_MEMBERSHIP.keys())
     manual = allPeople \
-        .filter(f.size('parties') > 1) \
+        .filter((f.size('parties') > 1) & (f.col('qid').isin(manualAssigned))) \
         .withColumn('tmp_party', __manual_party(f.col('qid'))) \
         .drop('parties')
 
