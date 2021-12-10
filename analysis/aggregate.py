@@ -85,7 +85,7 @@ def _prep_people(df: DataFrame) -> DataFrame:
         .withColumn('tmp_party', f.explode('parties')) \
         .drop('parties') \
         .union(manual) \
-        .select('qid', 'congress_member', 'genders') \
+        .select('qid', 'congress_member', 'genders', 'tmo_party') \
         .select('*', f.explode('genders').alias('tmp_gender')) \
         .select('qid', 'congress_member', __map_party('tmp_party').alias('party'), __map_gender('tmp_gender').alias('gender')) \
         .dropna(how='any', subset=['gender', 'party'])
