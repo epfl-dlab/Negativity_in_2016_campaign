@@ -19,6 +19,7 @@ from analysis.aggregate import _prep_people
 parser = argparse.ArgumentParser()
 parser.add_argument('--config', help='Path to configuration file to select empath and LIWC categories. (.json)', required=True)
 parser.add_argument('--quotations', help='Path To the quotation file.', required=True)
+parser.add_argument('--people', help='Path to a parquet file containing people background info', required=True)
 parser.add_argument('--liwc', help='Path to your local LIWC copy, as .pickle', required=True)
 parser.add_argument('--save', help='Path where to store the resulting data.', required=True)
 parser.add_argument('--content_column', help='The strings to analyse', default='quotation')
