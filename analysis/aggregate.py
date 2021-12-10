@@ -75,13 +75,16 @@ def _prep_people(df: DataFrame) -> DataFrame:
     __manual_party = f.udf(lambda x: MANUAL_PARTY_MEMBERSHIP[x], ArrayType(StringType()))
 
     allPeople = df.withColumn('congress_member', (f.size('CIDs') > 0).cast('integer'))
-    manual = allPeople.filter(f.size('parties') > 1).withColumn('tmp_party', __manual_party(f.col('qid')))
+    manual = allPeople \
+        .filter(f.size('parties') > 1) \
+        .withColumn('tmp_party', __manual_party(f.col('qid')))
 
     ret = allPeople \
         .filter((f.size('parties') == 1) & (f.size('genders') == 1)) \
-        .select('qid', 'congress_member', 'genders', f.explode('parties').alias('tmp_party')) \
-        .select('*', f.explode('genders').alias('tmp_gender')) \
+        .withColumn(f.explode('parties').alias('tmp_party')) \
         .union(manual) \
+        .select('qid', 'congress_member', 'genders') \
+        .select('*', f.explode('genders').alias('tmp_gender')) \
         .select('qid', 'congress_member', __map_party('tmp_party').alias('party'), __map_gender('tmp_gender').alias('gender')) \
         .dropna(how='any', subset=['gender', 'party'])
 
