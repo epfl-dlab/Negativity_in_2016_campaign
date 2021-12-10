@@ -33,7 +33,8 @@ parser.add_argument('--exclude_top_n', help='If given, will perform an aggregati
 parser.add_argument('--extract_top_n', help='Same as "individuals" argument, but takes the n most verbose individuals'
                                             'instead of specifying every one.', type=int)
 parser.add_argument('--top_n_file', help='Required for exclude_top_n: CSV file including rank and qid.')
-parser.add_argument('--standardize', default=True)
+parser.add_argument('--standardize', default=True, type=bool)
+parser.add_argument('--skip_basics', default=False, type=bool)
 
 
 MANUAL_PARTY_MEMBERSHIP = {
@@ -266,35 +267,24 @@ def getScoresBySpeakerGroup(df: DataFrame, groupby: List[str] = None) -> pd.Data
             cnt = elements.pop(-1)
             sws = elements.pop(-1)
             qid = elements.pop(-1)
-            year = elements.pop(0)
-            month = elements.pop(0)
-            date = datetime(year, month, 15)
 
-            if date not in scores:
-                scores[date] = {}
+            key = '-'.join(map(str, elements))
+            if key not in scores:
+                scores[key] = {}
+            if col not in scores[key]:
+                scores[key][col] = []
 
-            key = None if len(elements) == 0 else '-'.join(map(str, elements))
-            if col not in scores[date]:
-                if key is None:
-                    scores[date][col] = []
-                else:
-                    scores[date][col] = {}
-            if key is None:
-                scores[date][col].append(sws / cnt)
-            else:
-                if key not in scores[date][col]:
-                    scores[date][col][key] = []
-                scores[date][col][key].append(sws / cnt)
+            scores[key][col].append(sws / cnt)
 
-    for date in scores:
-        for col in scores[date]:
-            if isinstance(scores[date][col], list):
-                scores[date][col] = np.mean(scores[date][col])
-            else:
-                for key in scores[date][col]:
-                    scores[date][col][key] = np.mean(scores[date][col][key])
+    for key in scores:
+        for col in scores[key]:
+            scores[key][col] = np.mean(scores[key][col])
 
-    return _score_dict_to_pandas(scores, list(scores.keys()), columns)
+    keys = list(scores.keys())
+    df = _score_dict_to_pandas(scores, keys, columns)
+    df[groupby] = df.index.map(lambda x: list(map(int, x.split('-')))).to_list()
+    df.index = df.index.map(_make_date)
+    return df
 
 
 def getScoresByVerbosity(df, splits: int = 4) -> pd.DataFrame:
@@ -394,31 +384,32 @@ def main():
     else:
         MEAN = 0
         STD = 1
-    save(_df_postprocessing(agg, features, MEAN, STD), 'QuotationAggregation')
+    if not args.skip_basics:
+        save(_df_postprocessing(agg, features, MEAN, STD), 'QuotationAggregation')
 
-    agg = getScoresByGroups(df, ['gender', 'party', 'congress_member'])
-    agg = _add_governing_column(agg)
-    save(_df_postprocessing(agg, features, MEAN, STD), 'AttributesAggregation')
+        agg = getScoresByGroups(df, ['gender', 'party', 'congress_member'])
+        agg = _add_governing_column(agg)
+        save(_df_postprocessing(agg, features, MEAN, STD), 'AttributesAggregation')
 
-    agg = getScoresByGroups(df, ['party'])
-    save(_df_postprocessing(agg, features, MEAN, STD), 'PartyAggregation')
+        agg = getScoresByGroups(df, ['party'])
+        save(_df_postprocessing(agg, features, MEAN, STD), 'PartyAggregation')
 
-    agg = getScoresByGroups(df.filter(f.col('qid') != 'Q22686'), ['party'])
-    save(_df_postprocessing(agg, features, MEAN, STD), 'PartyAggregationWithoutTrump')
+        agg = getScoresByGroups(df.filter(f.col('qid') != 'Q22686'), ['party'])
+        save(_df_postprocessing(agg, features, MEAN, STD), 'PartyAggregationWithoutTrump')
 
-    agg = getScoresBySpeaker(df)
-    save(_df_postprocessing(agg, features, MEAN, STD), 'SpeakerAggregation')
+        agg = getScoresBySpeaker(df)
+        save(_df_postprocessing(agg, features, MEAN, STD), 'SpeakerAggregation')
 
-    agg = getScoresBySpeakerGroup(df)
-    save(_df_postprocessing(agg, features, MEAN, STD), 'SpeakerAggregationSanity')
+        agg = getScoresBySpeakerGroup(df)
+        save(_df_postprocessing(agg, features, MEAN, STD), 'SpeakerAggregationSanity')
 
-    agg = getScoresBySpeakerGroup(df, ['gender', 'party', 'congress_member'])
-    agg = _add_governing_column(agg)
-    save(_df_postprocessing(agg, features, MEAN, STD), 'AttributesAggregationSpeakerLevel')
+        agg = getScoresBySpeakerGroup(df, ['gender', 'party', 'congress_member'])
+        agg = _add_governing_column(agg)
+        save(_df_postprocessing(agg, features, MEAN, STD), 'AttributesAggregationSpeakerLevel')
 
-    spark.sparkContext.setLogLevel('ERROR')  # Window Warning is Expected and can be ignored
-    agg = getScoresByVerbosity(df)
-    save(_df_postprocessing(agg, features, MEAN, STD), 'VerbosityAggregation')
+        spark.sparkContext.setLogLevel('ERROR')  # Window Warning is Expected and can be ignored
+        agg = getScoresByVerbosity(df)
+        save(_df_postprocessing(agg, features, MEAN, STD), 'VerbosityAggregation')
 
     spark.sparkContext.setLogLevel('WARN')
     individuals = [] if args.individuals is None else args.individuals
