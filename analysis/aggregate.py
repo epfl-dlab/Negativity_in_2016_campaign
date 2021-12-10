@@ -152,7 +152,7 @@ def getScoresByGroups(df: DataFrame, groupby: List[str]) -> pd.DataFrame:
     scores = {}
     columns = [c for c in df.columns if ('liwc' in c) or ('empath' in c)]
     iterbar = tqdm(columns)
-    assert(df.drop_duplicates(['quoteID', 'qid'].count() == df.count()))
+    assert(df.drop_duplicates(['quoteID', 'qid']).count() == df.count())
     groupby = ['year', 'month'] + groupby
 
     for col in iterbar:
@@ -273,7 +273,7 @@ def getScoresBySpeakerGroup(df: DataFrame, groupby: List[str] = None) -> pd.Data
             if date not in scores:
                 scores[date] = {}
 
-            key = None if len(elements) == 0 else '-'.join(elements)
+            key = None if len(elements) == 0 else '-'.join(map(str, elements))
             if col not in scores[date]:
                 if key is None:
                     scores[date][col] = []
