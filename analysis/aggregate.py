@@ -8,7 +8,7 @@ import pandas as pd
 from pathlib import Path
 from pyspark.sql import DataFrame, SparkSession, Window
 import pyspark.sql.functions as f
-from pyspark.sql.types import IntegerType
+from pyspark.sql.types import ArrayType, IntegerType, StringType
 import sys
 from typing import Dict, List, Union
 from tqdm import tqdm
@@ -36,6 +36,32 @@ parser.add_argument('--top_n_file', help='Required for exclude_top_n: CSV file i
 parser.add_argument('--standardize', default=True)
 
 
+MANUAL_PARTY_MEMBERSHIP = {
+    'Q22686': REPUBLICAN_PARTY,  # Donald Trump, was republican president
+    'Q6294': DEMOCRATIC_PARTY,  # Hillary Clinton, was democratic presidential candidate
+    'Q215057': REPUBLICAN_PARTY,  # Rick Perry, Dem->Rep in 1989
+    'Q607': DEMOCRATIC_PARTY,  # Michael Bloomberg, Rep->Dem in 2007
+    'Q160582': REPUBLICAN_PARTY,  # Michele Bachmann, left democrats 1978
+    'Q244631': DEMOCRATIC_PARTY,  # Leon Panetta, high political democratic offices from 1994 on
+    'Q981167': REPUBLICAN_PARTY,  # Chris Smith, Dem->Rep 1978
+    'Q816459': REPUBLICAN_PARTY,  # Ben Carson, left democrats 1981, joined republicans 2014, candydacy for primaries 2015
+    # Dropping Charlie Christ, who changed party affiliation 2012
+    'Q6250211': REPUBLICAN_PARTY,  # John Neely Kennedy, Dem->Rep 2007
+    'Q6834862': DEMOCRATIC_PARTY,  # Michael Thompson, Found no source for his republican membership, but was candidate as Democrat for many elections
+    'Q1680235': REPUBLICAN_PARTY,  # James D. Martin, left Dem 1962
+    'Q6174997': DEMOCRATIC_PARTY,  # Jeff Smith, Wikipedia lists him only as Democrat - was candidate for house of representatives as democrat in 2004
+    'Q179732':  REPUBLICAN_PARTY,  # Nathan Deal, Dem -> Rep 1995
+    'Q525362': REPUBLICAN_PARTY,  # Sonny Perdue, Dem -> Rep 1997
+    'Q1683881': REPUBLICAN_PARTY,  # Jason Chaffetz, Dem -> Rep 1990
+    # Dropping Wilbur Ross (Q8000233) who changed party affiliation in 2016
+    # Drop Patrick Murphy (Q3182011), Rep -> Dem 2011 [but held every noteworthy position he had as a Democrat (from 2012 on)]
+    # Drop Tom Smith (Q7817616), Dem -> Rep 2011
+    # Drop Arlen Specter (Q363055), Rep -> Dem 2009, died 2012
+    'Q256334': REPUBLICAN_PARTY,  # Susana Martinez, Dem -> Rep 1995
+    'Q472254': REPUBLICAN_PARTY,  # Richard Shelby, Dem -> Rep 1994
+}
+
+
 def _prep_people(df: DataFrame) -> DataFrame:
     """
     Preprocessing of the speaker / people Dataframe. Maps categories to binary variables.
@@ -46,13 +72,21 @@ def _prep_people(df: DataFrame) -> DataFrame:
     gender_map = {MALE: 0, FEMALE: 1}
     __map_party = f.udf(lambda x: party_map.get(x, None), IntegerType())
     __map_gender = f.udf(lambda x: gender_map.get(x, None), IntegerType())
+    __manual_party = f.udf(lambda x: MANUAL_PARTY_MEMBERSHIP[x], ArrayType(StringType()))
 
-    return df \
-        .withColumn('congress_member', (f.size('CIDs') > 0).cast('integer')) \
+    allPeople = df.withColumn('congress_member', (f.size('CIDs') > 0).cast('integer'))
+    manual = allPeople.filter(f.size('parties') > 1).withColumn('tmp_party', __manual_party(f.col('qid')))
+
+    ret = allPeople \
+        .filter((f.size('party') == 1) & (f.size('genders')) == 1) \
         .select('qid', 'congress_member', 'genders', f.explode('parties').alias('tmp_party')) \
         .select('*', f.explode('genders').alias('tmp_gender')) \
+        .union(manual) \
         .select('qid', 'congress_member', __map_party('tmp_party').alias('party'), __map_gender('tmp_gender').alias('gender')) \
         .dropna(how='any', subset=['gender', 'party'])
+
+    assert ret.count() == (df.count() + manual.count())
+    return ret
 
 
 def _add_governing_column(df: pd.DataFrame) -> pd.DataFrame:
