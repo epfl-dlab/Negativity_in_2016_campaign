@@ -278,11 +278,12 @@ def getScoresBySpeakerGroup(df: DataFrame, groupby: List[str] = None) -> pd.Data
                 if key is None:
                     scores[date][col] = []
                 else:
-                    if key not in scores[date][col]:
-                        scores[date][col][key] = []
+                    scores[date][col] = {}
             if key is None:
                 scores[date][col].append(sws / cnt)
             else:
+                if key not in scores[date][col]:
+                    scores[date][col][key] = []
                 scores[date][col][key].append(sws / cnt)
 
     for date in scores:
