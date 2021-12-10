@@ -72,7 +72,7 @@ def _prep_people(df: DataFrame) -> DataFrame:
     gender_map = {MALE: 0, FEMALE: 1}
     __map_party = f.udf(lambda x: party_map.get(x, None), IntegerType())
     __map_gender = f.udf(lambda x: gender_map.get(x, None), IntegerType())
-    __manual_party = f.udf(lambda x: [MANUAL_PARTY_MEMBERSHIP[x]], ArrayType(StringType()))
+    __manual_party = f.udf(lambda x: MANUAL_PARTY_MEMBERSHIP[x], StringType())
 
     allPeople = df.withColumn('congress_member', (f.size('CIDs') > 0).cast('integer'))
     manual = allPeople \
@@ -83,11 +83,7 @@ def _prep_people(df: DataFrame) -> DataFrame:
     ret = allPeople \
         .filter((f.size('parties') == 1) & (f.size('genders') == 1)) \
         .withColumn('tmp_party', f.explode('parties')) \
-        .drop('parties')
-    ret.printSchema()
-    manual.printSchema()
-    sys.exit()
-    ret = ret \
+        .drop('parties') \
         .union(manual) \
         .select('qid', 'congress_member', 'genders') \
         .select('*', f.explode('genders').alias('tmp_gender')) \
