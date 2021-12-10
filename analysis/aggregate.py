@@ -113,7 +113,7 @@ def getScoresByGroups(df: DataFrame, groupby: List[str]) -> pd.DataFrame:
     scores = {}
     columns = [c for c in df.columns if ('liwc' in c) or ('empath' in c)]
     iterbar = tqdm(columns)
-    df = df.drop_duplicates(['qid'] + groupby)
+    df = df.drop_duplicates(['quoteID', 'qid'] + groupby)
     groupby = ['year', 'month'] + groupby
 
     for col in iterbar:
