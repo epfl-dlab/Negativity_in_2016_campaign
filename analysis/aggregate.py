@@ -78,7 +78,7 @@ def _prep_people(df: DataFrame) -> DataFrame:
     manual = allPeople.filter(f.size('parties') > 1).withColumn('tmp_party', __manual_party(f.col('qid')))
 
     ret = allPeople \
-        .filter((f.size('party') == 1) & (f.size('genders')) == 1) \
+        .filter((f.size('parties') == 1) & (f.size('genders')) == 1) \
         .select('qid', 'congress_member', 'genders', f.explode('parties').alias('tmp_party')) \
         .select('*', f.explode('genders').alias('tmp_gender')) \
         .union(manual) \
