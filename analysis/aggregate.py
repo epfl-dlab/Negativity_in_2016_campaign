@@ -83,7 +83,10 @@ def _prep_people(df: DataFrame) -> DataFrame:
     ret = allPeople \
         .filter((f.size('parties') == 1) & (f.size('genders') == 1)) \
         .withColumn('tmp_party', f.explode('parties')) \
-        .drop('parties') \
+        .drop('parties')
+    ret.printSchema()
+    manual.printSchema()
+    sys.exit()
         .union(manual) \
         .select('qid', 'congress_member', 'genders') \
         .select('*', f.explode('genders').alias('tmp_gender')) \
