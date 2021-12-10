@@ -91,9 +91,6 @@ def _prep_people(df: DataFrame) -> DataFrame:
         .select('qid', 'congress_member', __map_party('tmp_party').alias('party'), __map_gender('tmp_gender').alias('gender')) \
         .dropna(how='any', subset=['gender', 'party'])
 
-    print("ret", ret.count())
-    print("df", df.count())
-    print("manual", manual.count())
     return ret
 
 
@@ -155,7 +152,7 @@ def getScoresByGroups(df: DataFrame, groupby: List[str]) -> pd.DataFrame:
     scores = {}
     columns = [c for c in df.columns if ('liwc' in c) or ('empath' in c)]
     iterbar = tqdm(columns)
-    df = df.drop_duplicates(['quoteID', 'qid'] + groupby)
+    assert(df.drop_duplicates(['quoteID', 'qid'].count() == df.count()))
     groupby = ['year', 'month'] + groupby
 
     for col in iterbar:
@@ -229,6 +226,72 @@ def getScoresBySpeaker(df: DataFrame) -> pd.DataFrame:
     for date in scores:
         for col in scores[date]:
             scores[date][col] = np.mean(scores[date][col])
+
+    return _score_dict_to_pandas(scores, list(scores.keys()), columns)
+
+
+def getScoresBySpeakerGroup(df: DataFrame, groupby: List[str] = None) -> pd.DataFrame:
+    """
+    Lexicographic feature scores, macro-average over speakers.
+    Parameters
+    ----------
+    df: Spark dataframe containing counts
+    groupby: Grouping parameters
+    """
+    scores = {}
+    columns = [c for c in df.columns if ('liwc' in c) or ('empath' in c)]
+    iterbar = tqdm(columns)
+    if groupby is None:
+        groupby = ['year', 'month']
+    else:
+        groupby = ['year', 'month'] + groupby
+
+    for col in iterbar:
+        iterbar.set_description(col)
+        iterbar.update(n=0)
+        counts = df \
+            .groupby([*groupby, 'qid', col, 'numTokens']) \
+            .agg(f.count('*').alias('cnt')) \
+            .withColumn('weighted_score', f.col('cnt') * f.col(col) / f.col('numTokens')) \
+            .withColumn('yyyy-mm', f.concat(f.col('year'), f.lit('-'), f.col('month'))) \
+            .filter(~f.col('yyyy-mm').isin(MISSING_MONTHS)) \
+            .drop('yyyy-mm') \
+            .groupby(list(groupby) + ['qid']) \
+            .agg(f.sum('cnt').alias('total_cnt'), f.sum('weighted_score').alias('summed_weighted_score')) \
+            .rdd \
+            .map(lambda r: (*[r[g] for g in groupby], r['qid'], r['summed_weighted_score'], r['total_cnt'])).collect()
+
+        for elements in itertools.chain(counts):
+            elements = list(elements)
+            cnt = elements.pop(-1)
+            sws = elements.pop(-1)
+            qid = elements.pop(-1)
+            year = elements.pop(0)
+            month = elements.pop(0)
+            date = datetime(year, month, 15)
+
+            if date not in scores:
+                scores[date] = {}
+
+            key = None if len(elements) == 0 else '-'.join(elements)
+            if col not in scores[date]:
+                if key is None:
+                    scores[date][col] = []
+                else:
+                    if key not in scores[date][col]:
+                        scores[date][col][key] = []
+            if key is None:
+                scores[date][col].append(sws / cnt)
+            else:
+                scores[date][col][key].append(sws / cnt)
+
+    for date in scores:
+        for col in scores[date]:
+            if isinstance(scores[date][col], list):
+                scores[date][col] = np.mean(scores[date][col])
+            else:
+                for key in scores[date][col]:
+                    scores[date][col][key] = np.mean(scores[date][col][key])
 
     return _score_dict_to_pandas(scores, list(scores.keys()), columns)
 
@@ -344,6 +407,13 @@ def main():
 
     agg = getScoresBySpeaker(df)
     save(_df_postprocessing(agg, features, MEAN, STD), 'SpeakerAggregation')
+
+    agg = getScoresBySpeakerGroup(df)
+    save(_df_postprocessing(agg, features, MEAN, STD), 'SpeakerAggregationSanity')
+
+    agg = getScoresBySpeakerGroup(df, ['gender', 'party', 'congress_member'])
+    agg = _add_governing_column(agg)
+    save(_df_postprocessing(agg, features, MEAN, STD), 'AttributesAggregationSpeakerLevel')
 
     spark.sparkContext.setLogLevel('ERROR')  # Window Warning is Expected and can be ignored
     agg = getScoresByVerbosity(df)
