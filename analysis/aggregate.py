@@ -91,7 +91,9 @@ def _prep_people(df: DataFrame) -> DataFrame:
         .select('qid', 'congress_member', __map_party('tmp_party').alias('party'), __map_gender('tmp_gender').alias('gender')) \
         .dropna(how='any', subset=['gender', 'party'])
 
-    assert ret.count() == (df.count() + manual.count())
+    print("ret", ret.count())
+    print("df", df.count())
+    print("manual", manual.count())
     return ret
 
 
