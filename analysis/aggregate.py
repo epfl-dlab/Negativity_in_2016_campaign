@@ -30,6 +30,7 @@ parser.add_argument('--individuals', help='If provided, will get aggregates for 
 parser.add_argument('--exclude_top_n', help='If given, will perform an aggregation for each of the top n speakers'
                                             'excluding that speaker from the data. This enables to analyse the influence'
                                             'of the indivdual on the score', type=int, required=False)
+parser.add_argument('--start_top_n_at', help='Skip first N top speakers for extraction', type=int, default=0)
 parser.add_argument('--extract_top_n', help='Same as "individuals" argument, but takes the n most verbose individuals'
                                             'instead of specifying every one.', type=int)
 parser.add_argument('--top_n_file', help='Required for exclude_top_n: CSV file including rank and qid.')
@@ -117,7 +118,13 @@ def _add_governing_column(df: pd.DataFrame) -> pd.DataFrame:
 def _df_postprocessing(df: pd.DataFrame, features: List[str], MEAN: pd.DataFrame, STD: pd.DataFrame) -> pd.DataFrame:
     """Standardizes the dataframe and adds utility columns."""
     df = df.sort_index().reset_index().rename(columns={'index': 'date'})
-    start = min(df.date)
+    try:
+        start = min(df.date)
+    except ValueError:
+        print('Value Error')
+        print(df.columns)
+        print(df)
+        return pd.DataFrame()
     df['time_delta'] = df.apply(lambda r: int((r.date.year - start.year) * 12 + r.date.month - start.month), axis=1)
 
     df[features] = (df[features] - MEAN) / STD
@@ -415,7 +422,7 @@ def main():
     individuals = [] if args.individuals is None else args.individuals
     if args.extract_top_n is not None:
         rank_file = pd.read_csv(args.top_n_file)
-        individuals = individuals + rank_file['QID'][rank_file['Rank'] <= args.extract_top_n].tolist()
+        individuals = individuals + rank_file['QID'][(rank_file['Rank'] >= args.start_top_n_at) & (rank_file['Rank'] <= args.extract_top_n)].tolist()
     if len(individuals) > 0:
         base.joinpath('Individuals').mkdir(exist_ok=True)
     for qid in individuals:
