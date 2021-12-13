@@ -12,6 +12,7 @@ from matplotlib.patches import Polygon
 import matplotlib.pyplot as plt
 from matplotlib.text import Text as mText
 import matplotlib.ticker as ticker
+from matplotlib import rc
 import pandas as pd
 import pickle
 from pathlib import Path
@@ -82,7 +83,8 @@ POLITICIAN_IDS = {  # Make Individual Plots for these
     'Q76': 'Barack Obama',
     'Q6294': 'Hillary Clinton',
     'Q22686': 'Donald Trump',
-    'Q2036942': 'Ted Cruz'  # TODO: Missing
+    'Q6279': 'Joe Biden',
+    'Q24313': 'Mike Pence'
 }
 PROMINENCE_IDS = {  # Annotate them in score-vs-verbosity plots
     'Q76': 'Barack Obama',
@@ -149,12 +151,29 @@ def _grid_annotate(ax: plt.axis, model: RDD, feature: str):
             r'$\beta$=' + model.get_table(asPandas=True)[r'$\beta$'].loc[' '.join(feature.split('_')[1:])].split('(')[0]
         ])
     ])
+    # Aligned version in comments:
+    # params = '\\\\'.join([
+    #     ', '.join([
+    #         r'\alpha_0=' +
+    #         model.get_table(asPandas=True)[r'$\alpha_0$'].loc[' '.join(feature.split('_')[1:])].split('(')[0],
+    #         r'&\beta_0=' +
+    #         model.get_table(asPandas=True)[r'$\beta_0$'].loc[' '.join(feature.split('_')[1:])].split('(')[0]
+    #     ]),
+    #     ', '.join([
+    #         r'\alpha=' + model.get_table(asPandas=True)[r'$\alpha$'].loc[' '.join(feature.split('_')[1:])].split('(')[
+    #             0],
+    #         r'&\beta=' + model.get_table(asPandas=True)[r'$\beta$'].loc[' '.join(feature.split('_')[1:])].split('(')[0]
+    #     ])
+    # ])
+    # params = r'\begin{align*}' + re.sub(r'(\*+)', r'\\text{\1}', params) + r'\end{align*}'
+    # rc('text', usetex=True)
+    # rc('text.latex', preamble=r'\usepackage{amsmath}')
     box_props = dict(boxstyle='round', facecolor='white', alpha=1, ec='none')
-
-    ax.text(0.03, 0.0275, r2, transform=ax.transAxes, fontsize=FONTSIZE, verticalalignment='bottom',
+    ax.text(0.03, 0.03, r2, transform=ax.transAxes, fontsize=FONTSIZE, verticalalignment='bottom',
             horizontalalignment='left', bbox=box_props)
-    ax.text(0.5, 0.9725, params, transform=ax.transAxes, fontsize=FONTSIZE - 2, verticalalignment='top',
+    ax.text(0.5, 0.97, params, transform=ax.transAxes, fontsize=FONTSIZE - 2, verticalalignment='top',
             horizontalalignment='center', bbox=box_props)
+    # rc('text', usetex=False)
 
 
 def _move_xticks_halfway(ax: plt.axis) -> plt.axis:
@@ -212,8 +231,8 @@ def grid(models: Dict[str, RDD], ncols: int, nrows: int, features: List[str], st
             else:
                 ax = axs[i]
             ax.set_title(names[feature], fontsize=fontsize, fontweight=fontweight)
-            ax.set_title(kwargs.get('prefix', string.ascii_lowercase)[i] + ')', fontfamily='serif', loc='left',
-                         fontsize=FONTSIZE + 4)  # Subplot naming
+            ax.set_title('(' + kwargs.get('prefix', string.ascii_lowercase)[i] + ')', fontfamily='serif', loc='left',
+                         fontsize=FONTSIZE+2, fontweight='bold')  # Subplot naming
             try:
                 selectedStyle = style[feature]
             except KeyError:
@@ -273,7 +292,7 @@ def grid(models: Dict[str, RDD], ncols: int, nrows: int, features: List[str], st
 
 
 def scatter_grid(nrows, ncols, model, features, ylims=None, figsize=TWO_COL_FIGSIZE):
-    fig, axs = plt.subplots(figsize=TWO_COL_FIGSIZE, ncols=ncols, nrows=nrows, sharex='all', sharey='all', squeeze=False)
+    fig, axs = plt.subplots(figsize=figsize, ncols=ncols, nrows=nrows, sharex='all', sharey='all', squeeze=False)
     ymin, ymax = np.inf, -np.inf
     for i, feature in enumerate(features):
         ROW = i // ncols
@@ -286,7 +305,7 @@ def scatter_grid(nrows, ncols, model, features, ylims=None, figsize=TWO_COL_FIGS
         if COL == 0:
             ax.set_ylabel('Pre-campaign z-scores', fontsize=FONTSIZE)
         if ncols * nrows != 1:
-            ax.set_title(string.ascii_lowercase[i] + ')', fontfamily='serif', loc='left', fontsize=FONTSIZE + 4)
+            ax.set_title('(' + string.ascii_lowercase[i] + ')', fontfamily='serif', loc='left', fontsize=FONTSIZE + 4, fontweight='bold')
 
     ydiff = ymax - ymin
     for row in axs:
@@ -426,7 +445,7 @@ def verbosity_vs_parameter(folder: Path, base: Path, kind: str, alpha_CI: float 
     plot_data = {
         feature: pd.DataFrame(columns=names,
                               index=['alpha', 'beta', 'verbosity', 'alpha_low', 'alpha_high', 'beta_low',
-                                     'beta_high'])
+                                     'beta_high', 'p_alpha', 'p_beta'])
         for feature in CORE_FEATURES
     }
 
@@ -445,6 +464,10 @@ def verbosity_vs_parameter(folder: Path, base: Path, kind: str, alpha_CI: float 
                 'C(threshold)[T.1]:time_delta']
             alpha = summary['coef'].loc['C(threshold)[T.1]']
             beta = summary['coef'].loc['C(threshold)[T.1]:time_delta']
+            p_alpha = speaker_data.rdd_fit[feature].pvalues['C(threshold)[T.1]']
+            p_beta = speaker_data.rdd_fit[feature].pvalues['C(threshold)[T.1]:time_delta']
+            plot_data[feature].at['p_alpha', qid] = p_alpha
+            plot_data[feature].at['p_beta', qid] = p_beta
             plot_data[feature].at['alpha', qid] = alpha
             plot_data[feature].at['alpha_low', qid] = alpha_low
             plot_data[feature].at['alpha_high', qid] = alpha_high
@@ -460,7 +483,8 @@ def verbosity_vs_parameter(folder: Path, base: Path, kind: str, alpha_CI: float 
             assert kwargs.get('params', None) is not None
             axs = kwargs.get('axs')
             fig = plt.gcf()
-        significantPositive = 0
+        significant_count = 0
+        significant_positive = 0
         for i, (feature, data) in enumerate(plot_data.items()):
             ax = axs[i]
             ax.set_xscale('log')
@@ -474,39 +498,52 @@ def verbosity_vs_parameter(folder: Path, base: Path, kind: str, alpha_CI: float 
                                  index_col=0)[0]
                 base_low, base_high = summary[lower_CI].loc[key], summary[upper_CI].loc[key]
                 ax.axhline(y=baseline, linestyle='--', color='black')
-                ax.fill_between((0, max(verbosity_df['Unique Quotations'])),
-                                base_low, base_high, color='grey', alpha=0.3)
+                # CI band
+                # ax.fill_between((0, max(verbosity_df['Unique Quotations'])), base_low, base_high, color='grey', alpha=0.3)
             for qid in data.columns:
                 isTrump = int(qid == 'Q22686')
                 CI_low, CI_high = data[qid].loc[param + '_low'], data[qid].loc[param + '_high']
+                param_pval = data[qid].loc[f'p_{param}']
                 # Highlight "significant" points where CIs share a sign
                 clr = STYLES[feature]['color']
                 if kind == 'individual':
                     color = clr if (CI_low * CI_high > 0) else 'grey'
-                    significantPositive += int(CI_low > 0)
+                    significant_count += int(param_pval < 0.05)
+                    significant_positive += int((param_pval < 0.05) and (data[qid].loc[param] > 0))
                 else:
-                    color = clr if (base_low > CI_high) else 'grey'
+                    # color = clr if (base_low > CI_high) else 'grey'
+                    color = clr if isTrump else 'grey'
                 ax.plot((data[qid].loc['verbosity'], data[qid].loc['verbosity']), (CI_low, CI_high), '-', color=color,
-                        linewidth=0.3 + 1 * isTrump)
+                        linewidth=0.3 + 2 * isTrump)
                 ax.scatter(x=data[qid].loc['verbosity'], y=data[qid].loc[param], c=color, s=7.5 * (1 + 3 * isTrump))
                 if qid in PROMINENCE_IDS:
                     x_annot = int(data[qid].loc['verbosity'])
                     y_annot = CI_low
                     offset = 0.08 if param == 'alpha' else 0.002
-                    if isTrump and (param == 'alpha') and (feature in ['liwc_Anger', 'liwc_Anx', 'liwc_Sad']):
-                        y_annot = CI_high + 3 * offset  # Annotation would leave the axis elsewise
+                    if kind == 'individual':
+                        offset *= 3
+                    va = 'top'
+                    if (param == 'alpha') and (isTrump and (feature in ['liwc_Anger', 'liwc_Anx']) or feature == 'liwc_Sad'):
+                        y_annot = CI_high + 3 * offset  # Annotation would leave the axis else
+                        va = 'bottom'
                     ax.annotate(PROMINENCE_SHORT[PROMINENCE_IDS[qid]], (x_annot, y_annot - offset), ha='center',
-                                va='top', label=PROMINENCE_IDS[qid], fontweight='bold', fontsize=FONTSIZE - 4)
+                                va=va, label=PROMINENCE_IDS[qid], fontweight='bold', fontsize=FONTSIZE - 4)
 
             if kind == 'individual':
-                annot = rf'$\{param}>0$: {(data.loc[param] > 0).sum()} ({significantPositive} with $p<0.05$)'
+                annot = rf'$\{param}>0$:' + rf'{significant_positive}/{significant_count}' + '\n' + rf'with $p<0.05$'
                 box_props = dict(boxstyle='round', facecolor='white', alpha=1)
-                ax.text(0.975, 0.05, annot, transform=ax.transAxes, fontsize=FONTSIZE - 2, multialignment='center',
+                ax.text(0.97, 0.05, annot, transform=ax.transAxes, fontsize=FONTSIZE - 2, multialignment='center',
                         verticalalignment='bottom', horizontalalignment='right', bbox=box_props)
 
+                print('Param', param)
+                print('Feature', feature)
+                print('Sig_Positive', significant_positive)
+                print('Sig_cnt', significant_count)
+                print('>0', (data.loc[param] > 0).sum())
+
             ax.set_title(NAMES[feature], fontsize=FONTSIZE, fontweight='bold')
-            ax.set_title(kwargs.get('prefix', string.ascii_lowercase)[i] + ')', fontfamily='serif', loc='left',
-                         fontsize=FONTSIZE + 4)
+            ax.set_title('(' + kwargs.get('prefix', string.ascii_lowercase)[i] + ')', fontfamily='serif', loc='left',
+                         fontsize=FONTSIZE+2, fontweight='bold')
             if i > 0:
                 ax.tick_params(axis='y', which='both', left=False, right=False)
             else:
@@ -517,12 +554,10 @@ def verbosity_vs_parameter(folder: Path, base: Path, kind: str, alpha_CI: float 
                     ax.set_yticks([-10, 10])
                     ax.set_yticklabels(['-10', '10'])
                 elif (param == 'alpha') and (kind == 'ablation'):
-                    ax.set_ylim([0, 3])
+                    ax.set_ylim([-.5, 3])
                 elif (param == 'beta') and (kind == 'ablation'):
                     ax.set_ylim([-0.01, 0.05])
-            ax.set_xlabel('Number of Quotes')
-        if alpha_CI != 0.05:
-            fig.suptitle('{:.2f}% Confidence Intervals'.format(1 - alpha_CI), fontweight='bold', fontsize=FONTSIZE + 2)
+            ax.set_xlabel('Number of quotes')
 
         labels = list(PROMINENCE_SHORT.keys())
         handles = [PROMINENCE_SHORT[k] for k in labels]
@@ -545,7 +580,7 @@ def ablation_plots(folder: Path, base: Path):
     folder: Parent folder, containing RDDs fitted on data from all-but-one-individual each
     base: Base folder where to store figures in
     """
-    verbosity_vs_parameter(folder, base, 'ablation', alpha_CI=0.17)
+    verbosity_vs_parameter(folder, base, 'ablation')
     # fig, axs = plt.subplots(nrows=2, ncols=5, figsize=TWO_COL_FIGSIZE, sharex='all', sharey='row')
     # verbosity_vs_parameter(folder, base, 'ablation', alpha_CI=0.17, params=['alpha'], axs=axs[0])
     # verbosity_vs_parameter(folder.parent.joinpath('Individuals'), base.parent.joinpath('Individuals'),
@@ -575,6 +610,8 @@ def party_plots(folder: Path, base: Path):
     """
 
     def _get_party_name(path: Path) -> str:
+        if 'without' in path.name:
+            return path.name
         model_name = path.name.split('.')[0]
         return model_name.split('_')[-1]
 
@@ -662,7 +699,7 @@ def verbosity_plots(folder: Path, base: Path, verbosity_groups: Tuple[int] = (0,
         0: 'Most prominent speaker quartile',
         1: '2nd most prominent speaker quartile',
         2: '3rd most prominent speaker quartile',
-        3: 'Least most prominent speaker quartile'
+        3: 'Least prominent speaker quartile'
     }
 
     lower, upper = (13926.0, 18578.0)  # Hard coded numeric Quotebank Date limits + margin
@@ -681,20 +718,9 @@ def verbosity_plots(folder: Path, base: Path, verbosity_groups: Tuple[int] = (0,
             y_max = max(y_max, max(Y))
             ax.get_legend().remove()
             ax.set_title(NAMES[feature] + '\n' + V_label[verbosity], fontsize=FONTSIZE - 2, fontweight='bold')
+            ax.set_title('(' + string.ascii_lowercase[verbosity] + ')\n', fontfamily='serif', loc='left',
+                         fontsize=FONTSIZE+2, fontweight='bold')
 
-            txt = r"{\mathrm{adj}}"
-            r2 = f'$R^2_{txt}$={model.rdd[feature].loc["r2_adj"]:.2f}'
-            params = ',  '.join([
-                r'$\alpha$=' +
-                model.get_table(asPandas=True)[r'$\alpha$'].loc[' '.join(feature.split('_')[1:])].split('(')[0],
-                r'$\beta$=' +
-                model.get_table(asPandas=True)[r'$\beta$'].loc[' '.join(feature.split('_')[1:])].split('(')[0]
-            ])
-            box_props = dict(boxstyle='round', facecolor='white', alpha=1, ec='none')
-            ax.text(0.03, 0.0275, r2, transform=ax.transAxes, fontsize=FONTSIZE, verticalalignment='bottom',
-                    horizontalalignment='left', bbox=box_props)
-            ax.text(0.97, 0.9725, params, transform=ax.transAxes, fontsize=FONTSIZE, verticalalignment='top',
-                    horizontalalignment='right', bbox=box_props)
             if verbosity == 0:
                 ax.set_ylabel('Pre-campaign z-scores', fontsize=FONTSIZE)
             _grid_annotate(ax, model, feature)
@@ -713,7 +739,7 @@ def verbosity_plots(folder: Path, base: Path, verbosity_groups: Tuple[int] = (0,
 
 def attribute_plots(model_path: Path, base: Path):
     attributes = ['Intercept', 'C(threshold)[T.1]', 'time_delta', 'C(threshold)[T.1]:time_delta',
-                  'party', 'governing_party', 'gender', 'congress_member']
+                  'party', 'governing_party', 'congress_member', 'gender']
     titles = {
         'gender': r'$\mathbf{\eta}$: gender',
         'party': r'$\mathbf{\gamma}$: party affiliation',
@@ -726,7 +752,7 @@ def attribute_plots(model_path: Path, base: Path):
     }
     annotate = {
         'gender': ['Male', 'Female'],
-        'party': ['Republican', 'Democratic'],
+        'party': ['Republicans', 'Democrats'],
         'congress_member': ['Others', 'Congress'],
         'governing_party': ['Opposition', 'Government']
     }
@@ -759,12 +785,13 @@ def attribute_plots(model_path: Path, base: Path):
         if 'time_delta' not in att:  # All but betas
             ax.set_xlim([-4.5, 4.5])
             ax.set_xticks([-4, -2, 0, 2, 4])
+            ax.set_xlabel('Pre-campaign z-scores', fontsize=FONTSIZE - 2)
         else:
             ax.set_xlim([-0.075, 0.075])
             ax.set_xticks([-0.05, 0, 0.05])
 
+
         if att in annotate:
-            ax.set_xlabel('Pre-campaign z-scores', fontsize=FONTSIZE - 2)
             left, right = annotate[att]
             ax.text(x=0.05, y=0.9, s=r'{}$\longleftarrow$'.format(left), fontsize=FONTSIZE - 2, ha='left',
                     va='bottom', transform=ax.transAxes)
@@ -773,7 +800,7 @@ def attribute_plots(model_path: Path, base: Path):
 
         ax.tick_params(axis='both', labelsize=FONTSIZE - 2)
         ax.set_title(titles[att], fontsize=FONTSIZE - 2, fontweight='bold')
-        ax.set_title(string.ascii_lowercase[i] + ')', fontfamily='serif', loc='left', fontsize=FONTSIZE + 4)
+        ax.set_title('(' + string.ascii_lowercase[i] + ')', fontfamily='serif', loc='left', fontsize=FONTSIZE+2, fontweight='bold')
         ax.axvline(x=0, linestyle='dashed', color='black', linewidth=0.5)
         lower, upper = ax.get_ylim()
         ax.set_ylim(lower - .5, upper + .5)
@@ -877,47 +904,57 @@ def aggregation_overview(QuotationAggregation_RDD: RDD, SpeakerAggregation_RDD: 
         democratStyle[key]['label'] = 'Democrats'
     partyStyle = {'democrats': democratStyle, 'republicans': republicanStyle}
 
-    fig, axs = plt.subplots(ncols=5, nrows=3, figsize=[NARROW_TWO_COL_FIGSIZE[0], 2.5 * NARROW_TWO_COL_FIGSIZE[1]],
-                            sharex='all', sharey='all')
-    plt.subplots_adjust(wspace=.03, hspace=.45)
+    fig, axs = plt.subplots(ncols=5, nrows=3, figsize=[NARROW_TWO_COL_FIGSIZE[0], 3 * NARROW_TWO_COL_FIGSIZE[1]], sharey='all')
+    plt.subplots_adjust(wspace=.04, hspace=.6, bottom=.3)
 
     quot = axs[0, :]
     speak = axs[1, :]
     party = axs[2, :]
 
-    grid({'agg': QuotationAggregation_RDD}, 5, 1, CORE_FEATURES, STYLES, grid_annotate=True,
-         ylabel='Pre-campaign z-scores', axs=quot, fontweight='normal')
-    grid({'agg': SpeakerAggregation_RDD}, 5, 1, CORE_FEATURES, STYLES, grid_annotate=True,
-         ylabel='Pre-campaign z-scores', axs=speak, prefix=string.ascii_lowercase[5:], fontweight='normal')
+    grid({'agg': QuotationAggregation_RDD}, 5, 1, CORE_FEATURES, STYLES, grid_annotate=True, fontsize=FONTSIZE-2,
+         ylabel='Pre-campaign z-scores', axs=quot)
+    grid({'agg': SpeakerAggregation_RDD}, 5, 1, CORE_FEATURES, STYLES, grid_annotate=True, fontsize=FONTSIZE-2,
+         ylabel='Pre-campaign z-scores', axs=speak, prefix=string.ascii_lowercase[5:])
 
-    grid({'democrats': democrats, 'republicans': republicans}, 5, 1, CORE_FEATURES, partyStyle,
-         fontweight='normal',
+    grid({'democrats': democrats, 'republicans': republicans}, 5, 1, CORE_FEATURES, partyStyle, fontsize=FONTSIZE-2,
          grid_annotate=False, ylabel='Pre-campaign z-scores', axs=party, prefix=string.ascii_lowercase[10:],
          legend=True)
 
-    txt = ['Quote Aggregation', 'Speaker Aggregation', 'Quote Aggregation by Party']
+    txt = ['Quote-level aggregation', 'Speaker-level aggregation', 'Quote-level aggregation by party']
     for i, row in enumerate(axs):
         for j, ax in enumerate(row):
-            ax.set_ylim([-8, 8])
+            ax.set_ylim([-7, 7])
             if j == 2:
-                ax.text(0.5, 1.14, txt[i], fontsize=FONTSIZE, fontweight='bold', va='center', ha='center',
+                ax.text(0.5, 1.2, txt[i], fontsize=FONTSIZE, fontweight='bold', va='center', ha='center',
                         transform=ax.transAxes)
+            ax.tick_params(labelbottom=True)
+            plt.setp(ax.get_xticklabels(), rotation=90, ha="left")
 
-    saveFigure(fig, folder.joinpath('Negativity.pdf'))
+    saveFigure(fig, folder.joinpath('Negativity.pdf'), excludeTightLayout=True)
 
+    # Positive
     fig, axs = plt.subplots(ncols=3, nrows=1, figsize=NARROW_TWO_COL_FIGSIZE, sharex='all', sharey='all')
-    grid({'agg': QuotationAggregation_RDD}, 1, 1, ['liwc_Posemo'], STYLES, grid_annotate=True,
-         ylabel='Pre-campaign z-scores', axs=[axs[0]], fontweight='normal')
-    grid({'agg': SpeakerAggregation_RDD}, 1, 1, ['liwc_Posemo'], STYLES, grid_annotate=True,
-         axs=[axs[1]], prefix=['b'], fontweight='normal')
-    grid({'democrats': democrats, 'republicans': republicans}, 1, 1, ['liwc_Posemo'], partyStyle,
-         fontweight='normal',
-         grid_annotate=False, axs=[axs[2]], prefix=['c'], legend=True)
-    txt = ['Quote Aggregation', 'Speaker Aggregation', 'Quote Aggregation by Party']
-    for i, ax in enumerate(axs):
-        ax.set_ylim([-8, 8])
-        ax.text(0.5, 1.14, txt[i], fontsize=FONTSIZE, fontweight='bold', va='center', ha='center',
-                transform=ax.transAxes)
+    _scatter_only(axs[0], 'liwc_Posemo', QuotationAggregation_RDD, STYLES['liwc_Posemo']['color'], s=40)
+    axs[0].set_title(NAMES['liwc_Posemo'] + '\n' + txt[0], fontweight='bold', fontsize=FONTSIZE)
+    axs[0].set_ylabel('Pre-campaign z-scores', fontsize=FONTSIZE)
+    axs[0].set_title('(a)', fontfamily='serif', loc='left', fontsize=FONTSIZE+2, fontweight='bold')
+
+    _scatter_only(axs[1], 'liwc_Posemo', SpeakerAggregation_RDD, STYLES['liwc_Posemo']['color'], s=40)
+    axs[1].set_title(NAMES['liwc_Posemo'] + '\n' + txt[1], fontweight='bold', fontsize=FONTSIZE)
+    axs[1].set_title('(b)', fontfamily='serif', loc='left', fontsize=FONTSIZE+2, fontweight='bold')
+
+    timeLinePlot(democrats.data.date, democrats.data['liwc_Posemo'], ax=axs[2],
+                 snsargs={'s': 40, 'color': STYLES['liwc_Posemo']['color'], 'label': 'Democrats'},
+                 kind='scatter')
+    timeLinePlot(republicans.data.date, republicans.data['liwc_Posemo'], ax=axs[2],
+                 snsargs={'s': 40, 'color': 'grey', 'label': 'Republicans'},
+                 kind='scatter')
+    axs[2].set_title(NAMES['liwc_Posemo'] + '\n' + txt[2], fontweight='bold', fontsize=FONTSIZE)
+    axs[2].set_title('(c)', fontfamily='serif', loc='left', fontsize=FONTSIZE+2, fontweight='bold')
+    axs[2].legend(loc='lower center', ncol=2)
+
+    fig.autofmt_xdate(rotation=90, ha='left')
+    plt.minorticks_off()
 
     saveFigure(fig, folder.joinpath('Positive.pdf'))
 
@@ -990,14 +1027,11 @@ def title_figure(president_verbosity: pd.DataFrame, raw_negemo: pd.DataFrame, qu
     left.set_xlim(*mdates.date2num([min(dates)]), *mdates.date2num([max(dates)]))
     left.set_facecolor('none')
 
-    #  presidents.set_ylabel("Fraction of quotes by Trump (vs. Obama)")
     presidents.set_ylim([0, 1])
     presidents.set_yticklabels([])
     presidents.tick_params(axis='y', which='both', right=False)
     presidents.set_facecolor('none')
 
-    # _move_xticks_halfway(left_axis)
-    # _move_xticks_halfway(right_axis)
     colorTrump = (0.8392156862745098, 0.15294117647058825, 0.1568627450980392, 0.4)
     colorObama = (0.05, 0.48, 1, 0.75)
     presidents.fill_between(mdates.date2num(dates), np.zeros(len(dates)),
@@ -1063,7 +1097,7 @@ def title_figure(president_verbosity: pd.DataFrame, raw_negemo: pd.DataFrame, qu
             return alpha_0_val + alpha_val + (beta_val + beta_0_val) * delta
 
     patchColor = (0.1, 0.4, 1, 0.4)
-    beta_0 = dict(x1=-60, x2=-40, text=r'slope $\mathbf{\beta_0}$', y_offset=0.1)
+    beta_0 = dict(x1=-65, x2=-45, text=r'slope $\mathbf{\beta_0}$', y_offset=0.1)
     beta = dict(x2=20, x1=55, text=r'slope $\mathbf{\beta_0 + \beta}$', y_offset=0.2)
     patches = []
     for param in [beta_0, beta]:
@@ -1110,12 +1144,16 @@ def main():
         # 'Individuals': individuals,
         # 'Without': ablation_plots,
         # 'QuotationAggregation_RDD': basic_model_plots,
-        # 'QuotationAggregationTrump_RDD': basic_model_plots,
         # 'QuotationAggregation_RDD_outliers': outlier_plots,
         # 'SpeakerAggregation_RDD': basic_model_plots,
+        # 'SpeakerAggregationSanity_RDD': basic_model_plots,
         # 'SpeakerAggregation_RDD_outliers': outlier_plots,
         # 'AttributesAggregation_RDD': attribute_plots,
-        # 'RDD_time_variation': RDD_kink_performance
+        # 'AttributesAggregationSpeakerLevel_RDD': attribute_plots,
+        'RDD_time_variation': RDD_kink_performance,
+        # 'PartyAggregationWithoutTrump': basic_model_plots,
+        # 'PartyAggregationWithoutTrump_RDD_democrats': basic_model_plots,
+        # 'PartyAggregationWithoutTrump_RDD_republicans': basic_model_plots,
     }
 
     paths = {
