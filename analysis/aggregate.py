@@ -47,7 +47,7 @@ MANUAL_PARTY_MEMBERSHIP = {
     'Q244631': DEMOCRATIC_PARTY,  # Leon Panetta, high political democratic offices from 1994 on
     'Q981167': REPUBLICAN_PARTY,  # Chris Smith, Dem->Rep 1978
     'Q816459': REPUBLICAN_PARTY,  # Ben Carson, left democrats 1981, joined republicans 2014, candydacy for primaries 2015
-    # Dropping Charlie Christ, who changed party affiliation 2012
+    # Dropping Charlie Christ(Q374693), who changed party affiliation 2012
     'Q6250211': REPUBLICAN_PARTY,  # John Neely Kennedy, Dem->Rep 2007
     'Q6834862': DEMOCRATIC_PARTY,  # Michael Thompson, Found no source for his republican membership, but was candidate as Democrat for many elections
     'Q1680235': REPUBLICAN_PARTY,  # James D. Martin, left Dem 1962

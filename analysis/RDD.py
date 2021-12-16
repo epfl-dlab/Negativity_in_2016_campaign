@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 import pickle
+import re
 from statsmodels.stats.outliers_influence import summary_table
 import statsmodels.formula.api as smf
 import sys
@@ -15,6 +16,38 @@ from tqdm import tqdm
 
 sys.path.append(str(Path(__file__).parent.parent))  # Only works when keeping the original repo structure
 from utils.plots import timeLinePlot, ONE_COL_FIGSIZE
+
+TITLES = {
+    'gender': r'$\eta$: gender',
+    'party': r'$\gamma$: party affiliation',
+    'congress_member': r'$\zeta$: Congress membership',
+    'governing_party': r"$\delta$: party's federal role",
+    'Intercept': r'$\alpha_0$',
+    'C(threshold)[T.1]': r'$\alpha$',
+    'time_delta': r'$\beta_0$',
+    'C(threshold)[T.1]:time_delta': r'$\beta$'
+}
+NAMES = {
+    'liwc_Negemo': 'Negative emotion',
+    'liwc_Anx': 'Anxiety',
+    'liwc_Anger': 'Anger',
+    'liwc_Sad': 'Sadness',
+    'liwc_Swear': 'Swear words',
+    'liwc_Posemo': 'Positive emotion',
+    'linreg': 'Linear Regression',
+    'liwc_Certain': 'Certainty',
+    'liwc_Tentat': 'Tentativeness',
+    'empath_negative_emotion': 'empath\nNegative emotion',
+    'empath_positive_emotion': 'empath\nPositive emotion',
+    'empath_science': 'Science (empath)',
+    'empath_swearing_terms': 'empath\nSwearing',
+    'verbosity_vs_alpha': r'RDD $\alpha$ over verbosity',
+    'verbosity_vs_beta': r'RDD $\beta$ over verbosity',
+    'r2_adj': 'Adjusted $r^2$ score',
+    'r2_adj_posemo': 'Adjusted $r^2$ score for positive emotions'
+}
+
+MAKE_TABLES = ['liwc_Negemo', 'liwc_Anger', 'liwc_Anx', 'liwc_Sad', 'liwc_Swear']
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data', help='Folder with aggregates', required=True)
@@ -25,19 +58,6 @@ CM = 1/2.54
 FONTSIZE = 14
 DAY_ZERO = datetime(2008, 11, 1)
 KINK = datetime(2015, 6, 15)
-ROW_NAMES = {
-    'Negemo': 'Negative Emotions',
-    'Anx': 'Anxiety',
-    'Anger': 'Anger',
-    'Sad': 'Sadness',
-    'Swear': 'Swearing Terms',
-    'Posemo': 'Positive Emotions',
-    'Certain': 'Certainty',
-    'Tentat': 'Tentativeness',
-    'positive emotion': 'Pos. Emotion (empath)',
-    'negative emotion': 'Neg. Emotion (empath)',
-    'swearing terms': 'Swearing (empath)'
-}
 
 
 def get_first(x):
@@ -143,7 +163,7 @@ class RDD:
         rows = first_row['parameters'].index.tolist() + [f'split_{i}' for i in range(len(sample_splits))] + ['r2', 'r2_adj', 'f_score', 'SSR', 'aic']
 
         values = np.empty([len(rows), len(columns)])
-        for i, c in enumerate(columns):  #
+        for i, c in enumerate(columns):
             data = rdd_results[c]
             splits = list(data['splits'])
             r2 = data['r2']
@@ -235,32 +255,46 @@ class RDD:
         A Latex Tabular including RDD parameters and Confidence as used in the Paper appendix.
         """
         stats = list()
+        rename = {key: re.sub('\n', ' ', val).lower() for key, val in NAMES.items()}
         if features is None:
             features = list(self.rdd_fit.keys())
+        additionals = pd.DataFrame(index=features, columns=['$R^2$', 'Adj. $R^2$', 'No. Observations'])
         for feature in features:
             res = self.rdd_fit[feature]
             summary = pd.read_html(res.summary().tables[1].as_html(), header=0, index_col=0)[0]
             summary['P>|t|'] = res.pvalues  # Higher precision than given in the default summary
-            summary = summary.rename(index={'Intercept': r'$\alpha_0$', 'C(threshold)[T.1]': r'$\alpha$',
-                                            'time_delta': r'$\beta_0$', 'C(threshold)[T.1]:time_delta': r'$\beta$',
-                                            'governing_party': 'governing', 'congress_member': 'congress'},
+            additionals.at[feature, '$R^2$'] = res.rsquared
+            additionals.at[feature, 'Adj. $R^2$'] = res.rsquared_adj
+            additionals.at[feature, 'No. Observations'] = (~self.data[feature].isna()).sum()
+            summary = summary.rename(index=TITLES,
                                      columns={'P>|t|': 'p-value', '[0.025': 'CI_lower', '0.975]': 'CI_upper'}
-                                     )[['coef', 'p-value', 'CI_lower', 'CI_upper']]
+                                     )[['coef', 'p-value', 'CI_lower', 'CI_upper', 'std err']]
             stats.append(summary.T.stack())
 
         df = pd.concat(stats, axis=1).T
-        df.index = pd.Series(features).map(lambda x: ' '.join(x.split('_')[1:]))
-        coef = df['coef'].applymap(get_first)
+        df.index = features
         p_val = df['p-value'].applymap(pvalstars)
-        conf = '(' + df['CI_lower'].applymap(get_first) + ', ' + df['CI_upper'].applymap(get_first) + ')'
+        if asPandas:
+            coef = df['coef'].applymap(get_first)
+            conf = '(' + df['CI_lower'].applymap(get_first) + ', ' + df['CI_upper'].applymap(get_first) + ')'
+        else:
+            coef = df['coef'].applymap(lambda x: r'\phantom{-}' * int(x >= 0) + '{:.3f}'.format(x))
+            conf = '(' + df['std err'].applymap(lambda x: '{:.3f}'.format(x)) + ')'
+            p_val = p_val.applymap(lambda x: x + r'\phantom{*}' * (3 - len(x)))
         if CI_features is not None:
             ignore = [col for col in conf.columns if col not in CI_features]
             conf[ignore] = ''
+
+        additionals['$R^2$'] = additionals['$R^2$'].apply(lambda x: '{:.3f}'.format(x))
+        additionals['Adj. $R^2$'] = additionals['Adj. $R^2$'].apply(lambda x: '{:.3f}'.format(x))
+        additionals['No. Observations'] = additionals['No. Observations'].apply(str)
         table = coef + p_val + conf
+
+        table[additionals.columns] = additionals
         if asPandas:
             return table
-
-        return table.rename(index=ROW_NAMES).to_latex(sparsify=True, escape=False, multicolumn_format='c')
+        with pd.option_context("max_colwidth", 1000):  # Or else insignificant columns (many \phantoms) get truncated
+            return table.rename(index=rename).transpose().to_latex(sparsify=True, escape=False, multicolumn_format='c')
 
     def plot(self, feature, ax=None, parameters=False, **kwargs) -> Tuple[plt.axis, plt.figure]:
         """
@@ -296,7 +330,7 @@ class RDD:
         dates_rdd = [self._get_approx_date(x) for x in X_rdd]
         for i in range(len(dates_rdd) // 2):
             timeLinePlot([dates_rdd[2 * i], dates_rdd[2 * i + 1]], [Y_rdd[2 * i], Y_rdd[2 * i + 1]], ax=ax,
-                         snsargs={'label': kwargs.get('label', 'RDD') if i == 0 else '', 'color': color, 'linewidth': linewidth},
+                         snsargs={'label': kwargs.get('label', None) if i == 0 else '', 'color': color, 'linewidth': linewidth},
                          timeDelta='1y',
                          includeElections=kwargs.get('includeElections', True))
 
@@ -338,19 +372,15 @@ class RDD:
         if parameters:
             if parameters == 'all':  # Bit dirty, but nice hack to allow booleans and strings
                 param_annotation = ', '.join([
-                    r'$\alpha_0$=' + self.get_table(asPandas=True)[r'$\alpha_0$'].loc[
-                        ' '.join(feature.split('_')[1:])],
-                    r'$\beta_0$=' + self.get_table(asPandas=True)[r'$\beta_0$'].loc[
-                        ' '.join(feature.split('_')[1:])],
-                    r'$\alpha$=' + self.get_table(asPandas=True)[r'$\alpha$'].loc[
-                        ' '.join(feature.split('_')[1:])],
-                    r'$\beta$=' + self.get_table(asPandas=True)[r'$\beta$'].loc[' '.join(feature.split('_')[1:])]
+                    r'$\alpha_0$=' + self.get_table(asPandas=True)[r'$\alpha_0$'].loc[feature],
+                    r'$\beta_0$=' + self.get_table(asPandas=True)[r'$\beta_0$'].loc[feature],
+                    r'$\alpha$=' + self.get_table(asPandas=True)[r'$\alpha$'].loc[feature],
+                    r'$\beta$=' + self.get_table(asPandas=True)[r'$\beta$'].loc[feature]
                 ])
             else:
                 param_annotation = ', '.join([
-                    r'$\alpha$=' + self.get_table(asPandas=True)[r'$\alpha$'].loc[
-                        ' '.join(feature.split('_')[1:])],
-                    r'$\beta$=' + self.get_table(asPandas=True)[r'$\beta$'].loc[' '.join(feature.split('_')[1:])]
+                    r'$\alpha$=' + self.get_table(asPandas=True)[r'$\alpha$'].loc[feature],
+                    r'$\beta$=' + self.get_table(asPandas=True)[r'$\beta$'].loc[feature]
                 ])
             box_props = dict(boxstyle='square', facecolor='white', alpha=0.5)
             annSize = FONTSIZE - 2 if parameters == 'all' else FONTSIZE
@@ -491,7 +521,7 @@ def main():
     storage_folder.mkdir(exist_ok=True)
 
     for file in tqdm(list(data_folder.iterdir())):
-        if not file.name.endswith('.csv'):
+        if file.name == 'presidents.csv' or not file.name.endswith('.csv'):  #Quick fix
             continue
         aggregates = pd.read_csv(str(file)).sort_values('time_delta')
         outliers_removed = remove_outliers(aggregates, 3)
@@ -508,6 +538,8 @@ def main():
             make_folder = 'parties'
             masks['_republicans'] = aggregates.party == 0
             masks['_democrats'] = aggregates.party == 1
+            if 'WithoutTrump' in file.name:
+                make_folder = None  # Store this one top level
 
         else:
             masks = {'': np.ones(len(aggregates), dtype=bool)}  # Default, no mask
@@ -534,7 +566,7 @@ def main():
 
                 pickle.dump(reg, save_in.joinpath(fname + '_RDD' + prefix + '.pickle').open('wb'))
                 with save_in.joinpath(fname + '_tabular' + prefix + '.tex').open('w') as tab:
-                    tab.write(reg.get_table())
+                    tab.write(reg.get_table(features=MAKE_TABLES))
 
 
 if __name__ == '__main__':
