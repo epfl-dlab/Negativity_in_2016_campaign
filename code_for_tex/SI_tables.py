@@ -33,11 +33,11 @@ ORDER = [
 ]
 
 DESCRIPTIONS = {
-    'metrics': r"Means $\mu$ and standard deviations $\sigma$ were calculated over monthly quote-level aggregates from the pre-campaign period (September 2008through May 2015). "
-        "The value $n=1/\mu$ in the fourth column implies that, in an average quote, on averageevery $n$-th word belongs to the respective category. "
+    'metrics': r"Means $\mu$ and standard deviations $\sigma$ were calculated over monthly quote-level aggregates from the pre-campaign period (September 2008 through May 2015). "
+        "The value $n=1/\mu$ in the fourth column implies that, in an average quote, on average every $n$-th word belongs to the respective category. "
         "The coefficients of variation, $\sigma/\mu$, shown in the fifth column, allow to easily translate pre-campaign standard deviations "
-        "(as shown on the y-axes of time series plots) into fractions of pre-campaign means. The most frequent words per category are listed"
-        "in Tables $old_17$ and $old_18$.",
+        "(as shown on the y-axes of time series plots) into fractions of pre-campaign means. The most frequent words per category are listed "
+        "in SI Tables S2 and S3.",
     'QuotationAggregation': 'SEs of coefficients are in parantheses. ***$p < 0.001$, **$p < 0.01$ and *$p < 0.05$',
     'QuotationAggregation_out': 'SEs of coefficients are in parantheses. ***$p < 0.001$, **$p < 0.01$ and *$p < 0.05$',
     'SpeakerAggregation': 'SEs of coefficients are in parantheses. ***$p < 0.001$, **$p < 0.01$ and *$p < 0.05$',
@@ -108,17 +108,19 @@ def _get_label(fname: str) -> str:
 def _get_sentiment_caption(fname: str) -> Tuple[str, str]:
     if 'after' in fname:
         t = 'after ' + DISC
-        other = 'before' + DISC
+        otherPeriod = 'first'
+        other = 'before ' + DISC
     elif 'before' in fname:
         t = 'before ' + DISC
-        other = 'after' + DISC
+        otherPeriod = 'second'
+        other = 'after ' + DISC
     else:
         t = None
 
     if re.search('top_[0-9]+', fname.lower()):
         n = re.search('[0-9]+', fname)[0]
-        caption = f'The most common {n} words for each sentiment category, ' + t
-        descr = f'Bold values deviate from the second period ({other}) by more than one percentage point'
+        caption = f'The most common {n} words for each word category, ' + t
+        descr = f'Bold values deviate from the {otherPeriod} period ({other}) by more than one percentage point'
         return caption, descr
     else:
         raise NotImplementedError
@@ -147,10 +149,10 @@ def _get_rdd_caption(fname: str) -> Tuple[str, str]:
     elif name == 'PartyAggregation':
         if 'democrats' in fname:
             agg = 'PartyAggregationDemocrat'
-            caption += 'quote-level aggregation for democrats'
+            caption += 'quote-level aggregation for Democrats'
         else:
             agg = 'PartyAggregationRepublican'
-            caption += 'quote-level aggregation for republicans'
+            caption += 'quote-level aggregation for Republicans'
         if not hasOutliers:
             caption += ' shown in Figure 2 in the main text'
     elif name == 'VerbosityAggregation':
@@ -158,7 +160,7 @@ def _get_rdd_caption(fname: str) -> Tuple[str, str]:
         caption += 'aggregation on the {}'.format(V_label[group].lower())
         agg = name + '_{}'.format(group)
     elif name == 'PartyAggregationWithoutTrump' and 'republicans' in fname:
-        caption += 'quote-level aggregation for republicans, but excluding Donald Trump'
+        caption += 'quote-level aggregation for Republicans, but excluding Donald Trump'
     else:
         return None, None
 

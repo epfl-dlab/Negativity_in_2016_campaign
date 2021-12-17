@@ -10,12 +10,12 @@ FIGURES = [
     ('SI/Party_all', 'Quote-level aggregation split by party'),  # Was 5
     ('RDD_time_variation/r2_adj', r'Adjusted R2 score of the OLS regression as a function of the discontinuity placement'),
     ('AttributesAggregationSpeakerLevel_RDD/selected_attributes', 'Biographic correlates of negative language based on speaker-level aggregation'),
-    ('Individuals/verbosity_vs_beta', r'Regression parameter $\beta$ resulting from an ordinary least squares regressions fitted separately to the time series of each of the 200 most quoted speakers.'),
-    ('SI/Individuals_Grid', 'Quote-level aggregation for prominent politicians. John McCain died in 2018 but was frequntly quoted thereafter still.'),  # Was 3
+    ('Individuals/verbosity_vs_beta', r'Regression parameter $\beta$ resulting from an ordinary least squares regressions fitted separately to the time series of each of the 200 most quoted speakers. For detailed description of plot format, see caption of Fig. 5 in main text.'),
+    ('SI/Individuals_Grid', 'Quote-level aggregation for prominent politicians.'),  # Was 3
     ('Without/verbosity_vs_beta', r'Regression parameter $\beta$ obtained by removing all quotes by one target speaker, using the 50 most quoted speakers as target speakers'),
     ('RDD_time_variation/r2_adj_posemo', r'Adjusted R2 score of the OLS regression as a function of the discontinuity placement for positive emotions'),
     ('RDD_time_variation/r2_empath', r'Adjusted R2 score of the OLS regression as a function of the discontinuity placement for empath-based sentiment scores'),
-    ('SI/quantities', r'Monthly number of speakers and unique quotations in Quotebank'),
+    ('SI/quantities', r'Monthly number of speakers and unique quotations in Quotebank (restricted to the 18,627 US politicians considered in the analysis)'),
 ]
 
 
