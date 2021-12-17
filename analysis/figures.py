@@ -23,6 +23,7 @@ sys.path.append(str(Path(__file__).parent.parent))  # Only works when keeping th
 from utils.plots import saveFigure, timeLinePlot, ONE_COL_FIGSIZE, TWO_COL_FIGSIZE, NARROW_TWO_COL_FIGSIZE, \
     NARROW_NARROW_TWO_COL_FIGSIZE, PRESIDENTIAL_ELECTIONS, LANDSCAPE_NARROW_FIGSIZE, LANDSCAPE_FIGSIZE
 from analysis.RDD import RDD, KINK, TITLES, NAMES
+from analysis.aggregate import MISSING_MONTHS
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--rdd', help='Folder containing fitted RDDs', required=True)
@@ -33,6 +34,7 @@ FONTSIZE = 14
 CORE_FEATURES = ['liwc_Negemo', 'liwc_Anger', 'liwc_Anx', 'liwc_Sad', 'liwc_Swear']
 SI_FEATURES = ['liwc_Negemo', 'empath_negative_emotion', 'liwc_Anger', 'liwc_Anx', 'liwc_Sad', 'liwc_Swear', 'empath_swearing_terms']
 LIWC_FEATURES = CORE_FEATURES + ['liwc_Posemo']
+DROPPED_DATA = [datetime(int(m.split('-')[0]), int(m.split('-')[1]), 15) for m in MISSING_MONTHS]
 
 # Colors, after https://mikemol.github.io/technique/colorblind/2018/02/11/color-safe-palette.html
 VERMILLION = '#D55E00'
@@ -102,6 +104,7 @@ V_label = {
     2: '3rd most prominent speaker quartile',
     3: 'Least prominent speaker quartile'
 }
+
 
 def _conf_only(ax: plt.axis, feature: str, model: RDD, color: str):
     lower, upper = model._rdd_confidence(feature)
@@ -776,6 +779,7 @@ def verbosity_plots(folder: Path, base: Path, verbosity_groups: Tuple[int] = (0,
     plt.minorticks_off()
 
     saveFigure(SI_fig, base.joinpath('Verbosity_all'), excludeTightLayout=True)
+    plt.close('all')
 
 
 def attribute_plots(model_path: Path, base: Path):
@@ -869,7 +873,14 @@ def plot_quantities(data_path: Path, base: Path):
                                kind='scatter',
                                snsargs={'color': 'black'},
                                ax=axs[i])
+        drop_mask = df.dt_month.isin(DROPPED_DATA)
+        fig, ax = timeLinePlot(x=df.dt_month[drop_mask],
+                               y=df[col][drop_mask],
+                               kind='scatter',
+                               snsargs={'color': 'grey'},
+                               ax=axs[i])
         ax.set_title(name, fontsize=FONTSIZE)
+        ax.set_xlim(13926.0, 18578.0)
 
     axs[0].set_ylim([0, 11000])
     axs[0].set_yticks([5000, 10000])

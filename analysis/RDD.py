@@ -60,27 +60,32 @@ DAY_ZERO = datetime(2008, 11, 1)
 KINK = datetime(2015, 6, 15)
 
 
-def get_first(x):
+def get_second(x):
     """
     Gets string of a float up to the first non-zero decimal.
-    Code by Manoel Horta Ribeiro: https://github.com/epfl-dlab/platform_bans/blob/main/helpers/regression_helpers.py
+    Adapted from code by Manoel Horta Ribeiro:
+    https://github.com/epfl-dlab/platform_bans/blob/main/helpers/regression_helpers.py
     """
     if int(x) == x:  # Gotta "love" python
         return str(int(x))
     x_ = abs(x)
 
     decimal_part = abs(x_ - float(int(x_)))
-    max0s = 3
+    max0s = 4
+    after_first = 1
     if x_ > 1:
         max0s = 1
-    if x_ > 1000:
+        after_first = 0
+    elif x_ > 1000:
         max0s = 0
+        after_first = 1
 
     first_non0 = math.ceil(abs(np.log10(decimal_part)))
 
-    strv = str(round(x, min(first_non0, max0s)))
-    if strv[-2:] == ".0":
-        strv = strv[:-2]
+    strv = str(round(x, min(first_non0 + after_first, max0s)))
+    if (x_ < 1) and (decimal_part > 0) and (len(strv.split('.')[1]) == first_non0):
+        # Trailing zero was "rounded away"
+        strv = strv + '0'
 
     return strv
 
@@ -275,8 +280,8 @@ class RDD:
         df.index = features
         p_val = df['p-value'].applymap(pvalstars)
         if asPandas:
-            coef = df['coef'].applymap(get_first)
-            conf = '(' + df['CI_lower'].applymap(get_first) + ', ' + df['CI_upper'].applymap(get_first) + ')'
+            coef = df['coef'].applymap(get_second)
+            conf = '(' + df['CI_lower'].applymap(get_second) + ', ' + df['CI_upper'].applymap(get_second) + ')'
         else:
             coef = df['coef'].applymap(lambda x: r'\phantom{-}' * int(x >= 0) + '{:.3f}'.format(x))
             conf = '(' + df['std err'].applymap(lambda x: '{:.3f}'.format(x)) + ')'

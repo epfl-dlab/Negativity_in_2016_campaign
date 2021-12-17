@@ -37,7 +37,7 @@ DESCRIPTIONS = {
         "The value $n=1/\mu$ in the fourth column implies that, in an average quote, on average every $n$-th word belongs to the respective category. "
         "The coefficients of variation, $\sigma/\mu$, shown in the fifth column, allow to easily translate pre-campaign standard deviations "
         "(as shown on the y-axes of time series plots) into fractions of pre-campaign means. The most frequent words per category are listed "
-        "in SI Tables S2 and S3.",
+        "in \SupTabs{} S2 and S3.",
     'QuotationAggregation': 'SEs of coefficients are in parantheses. ***$p < 0.001$, **$p < 0.01$ and *$p < 0.05$',
     'QuotationAggregation_out': 'SEs of coefficients are in parantheses. ***$p < 0.001$, **$p < 0.01$ and *$p < 0.05$',
     'SpeakerAggregation': 'SEs of coefficients are in parantheses. ***$p < 0.001$, **$p < 0.01$ and *$p < 0.05$',
@@ -79,7 +79,7 @@ def make_table_from_disk(file: Path, caption: str, label: str, desription: str) 
 
 def make_table(tabular: str, caption: str, label: str, description: str) -> str:
 
-    adjustbox = False if caption in ['(Extended version of Table 1 in the main text) Key metrics for all sentiment attributes, including results for empath word categories',
+    adjustbox = False if caption in ['(Extended version of Table 1 in the main text) Key metrics for all word categories, including results for empath word categories',
                                      'Most frequently quoted politicians'] else True
 
     label = ''.join(letter for letter in label if (letter not in r'$\\'))
@@ -254,7 +254,7 @@ def main():
             dump.write(summary.to_latex(sparsify=True, escape=False))
 
     txt = make_table_from_disk(SAVE.joinpath('mean_std_all_metrics.tex'),
-                               '(Extended version of Table 1 in the main text) Key metrics for all sentiment attributes, including results for empath word categories',
+                               '(Extended version of Table 1 in the main text) Key metrics for all word categories, including results for empath word categories',
                                'mean_std', DESCRIPTIONS['metrics'])
 
     # Get the latest RDD parameter tables

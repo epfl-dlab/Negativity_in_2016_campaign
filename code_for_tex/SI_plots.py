@@ -14,8 +14,8 @@ FIGURES = [
     ('SI/Individuals_Grid', 'Quote-level aggregation for prominent politicians.'),  # Was 3
     ('Without/verbosity_vs_beta', r'Regression parameter $\beta$ obtained by removing all quotes by one target speaker, using the 50 most quoted speakers as target speakers'),
     ('RDD_time_variation/r2_adj_posemo', r'Adjusted R2 score of the OLS regression as a function of the discontinuity placement for positive emotions'),
-    ('RDD_time_variation/r2_empath', r'Adjusted R2 score of the OLS regression as a function of the discontinuity placement for empath-based sentiment scores'),
-    ('SI/quantities', r'Monthly number of speakers and unique quotations in Quotebank (restricted to the 18,627 US politicians considered in the analysis)'),
+    ('RDD_time_variation/r2_empath', r'Adjusted R2 score of the OLS regression as a function of the discontinuity placement for empath-based scores'),
+    ('SI/quantities', r'Monthly number of speakers and unique quotations in Quotebank (restricted to the 18,627 US politicians considered in the analysis). Months that were removed due missing data (cf. Materials and Methods in main text) are plotted in gray.'),
 ]
 
 
