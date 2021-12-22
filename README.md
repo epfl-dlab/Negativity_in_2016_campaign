@@ -17,5 +17,15 @@ This repository contains the code and aggregated data for the publication "Unite
 
 1. You need a local version of LIWC for the sentiment analysis. The code expects it to be a pickle file for a python dictionary, mapping {LIWC category -> Regular Expression}
 2. Make sure you have Quotebank in the quotation centric format available.
-3. Prepare a python environment with pyspark - for the paper, we used pyspark 2.4.0, but newer versions should work as well.
-4. If you did not do so already, transform the Quotebank data to the parquet format. There is a script for that purpose in the utils folder. If you do this by yourself, make sure the new dataframe contains the columns "year" and "month" - they are convenient for filtering and parquet partitioning. Also, the date column should be transformed to "yyyy-MM-dd" format.
+3. Prepare a python environment according to requirements.txt with pyspark - for the paper, we used pyspark 2.4.0, but newer versions should work as well.
+4. If you did not do so already, transform the Quotebank data from the json format it is provided in to the parquet format. There is a script for that purpose in the utils folder. If you do this by yourself, make sure the new dataframe contains the columns "year" and "month" - they are convenient for filtering and parquet partitioning. Also, the date column should be transformed to "yyyy-MM-dd" format.
+
+# Folder Overview
+
+- analysis: Contains the heart of this project: This includes the code to aggregate the Quotebank data, to fit ordinary linear regression models, to extract liwc scores from the quotations and to produce the figures as they appear in the paper.
+- code_for_tex: Here you find python utilties to auto-generate the Latex-files for plots and tables in the supplementary material.
+- config: Configuration files.
+- data: Data aggregates, fitted regression models (RDD) and more.
+- preparations: Utilities to filter and prepare Quotebank before applying any analysis functions on it. This includes extracting quotes from politicians and removing unwanted quotes.
+- SI: The supplementary material
+- utils: Most importantly, a plot wrapper function used for most figures in the paper. Moreover: Useful shortcuts and frequently needed spark commands.
