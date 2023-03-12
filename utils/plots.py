@@ -153,7 +153,7 @@ def timeLinePlot(x, y,
     return fig, ax
 
 
-def saveFigure(fig: plt.Figure, path: Path, dpi: int = 300, excludeTightLayout: bool = False):
+def saveFigure(fig: plt.Figure, path: Path, dpi: int = 300, excludeTightLayout: bool = False, **kwargs):
     """
     A wrapper to save Figures as PDF
     Parameters
@@ -171,4 +171,5 @@ def saveFigure(fig: plt.Figure, path: Path, dpi: int = 300, excludeTightLayout: 
 
     base = path.parent
     base.mkdir(exist_ok=True, parents=True)
-    fig.savefig(path, dpi=dpi, bbox_inches='tight')
+    kwargs.setdefault('bbox_inches', 'tight')
+    fig.savefig(path, dpi=dpi, **kwargs)
