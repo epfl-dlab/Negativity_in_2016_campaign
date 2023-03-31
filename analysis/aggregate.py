@@ -441,7 +441,7 @@ def main():
             .dropDuplicates(['news_quote_ID'])
         credible_news = df.join(cred, on=cred.news_quote_ID == df.quoteID, how='inner').drop('domain', 'news_quote_ID')
         agg = getScoresByGroups(credible_news, [])
-        save(_df_postprocessing(agg, features, MEAN, STD), 'YouGov_sources.parquet')
+        save(_df_postprocessing(agg, features, MEAN, STD), 'YouGov_sources')
 
     spark.sparkContext.setLogLevel('WARN')
     individuals = [] if args.individuals is None else args.individuals
@@ -457,6 +457,7 @@ def main():
         save(_df_postprocessing(agg, features, MEAN, STD), 'Individuals/{}'.format(qid))
 
     if args.exclude_top_n is not None:
+        # This part runs quite long: We aggregate over basically everything for every excluded speaker
         base.joinpath('Without').mkdir(exist_ok=True)
         rank_file = pd.read_csv(args.top_n_file)
         for i in range(args.exclude_top_n):
