@@ -373,7 +373,7 @@ def main():
     if ((args.exclude_top_n is not None) or (args.extract_top_n is not None)) and (args.top_n_file is None):
         raise argparse.ArgumentError("If exclude_top_n / extract_top_n is given, top_n_file must be given, too.")
 
-    if args.exclude_by_qid is not None and args.exlude_top_n is None:
+    if args.exclude_by_qid is not None and args.exclude_top_n is None:
         raise argparse.ArgumentError("If exclude_by_qid is given, exclude_top_n must be given, too.")
 
     if args.exclude_by_qid is not None:
@@ -434,7 +434,12 @@ def main():
 
     if args.selected_sources is not None:
         selected_sources = pd.read_csv(args.selected_sources, index_col='Rank').Website.tolist()
-        credible_news = df.filter(f.col('source').isin(selected_sources))
+        cred = df \
+            .select(f.col('quoteID').alias('news_quote_ID'),
+                    f.explode('domains').alias('domain')) \
+            .filter(f.col('domain').isin(selected_sources)) \
+            .dropDuplicates(['news_quote_ID'])
+        credible_news = df.join(cred, on=cred.news_quote_ID == df.quoteID, how='inner').drop('domain', 'news_quote_ID')
         agg = getScoresByGroups(credible_news, [])
         save(_df_postprocessing(agg, features, MEAN, STD), 'YouGov_sources.parquet')
 
