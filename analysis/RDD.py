@@ -52,7 +52,7 @@ MAKE_TABLES = ['liwc_Negemo', 'liwc_Anger', 'liwc_Anx', 'liwc_Sad', 'liwc_Swear'
 parser = argparse.ArgumentParser()
 parser.add_argument('--data', help='Folder with aggregates', required=True)
 parser.add_argument('--save', help='Folder to save RDD fits to',  required=True)
-parser.add_argument('--fit_outliers', help='If true, will remove outliers and fit an addition RDD', type=bool, default=False)
+parser.add_argument('--fit_outliers', help='If true, will remove outliers and fit an additional RDD', type=bool, default=False)
 
 CM = 1/2.54
 FONTSIZE = 14
