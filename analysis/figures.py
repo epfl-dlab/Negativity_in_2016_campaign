@@ -896,6 +896,9 @@ def RDD_kink_performance(data_path: Path, base: Path):
     Plots the performance of the RDD, depending on the date of the discontinuity / kink
     """
     data = pickle.load(data_path.open('rb'))
+    if 'YouGov' in str(data_path):
+        base = base.joinpath('YouGov')
+        base.mkdir(exist_ok=True)
     dates = list(data.keys())
     ylabeltext = r"$R^2_{\mathrm{adj}}$"
     fig, ax = plt.subplots(figsize=TWO_COL_FIGSIZE)
@@ -1193,7 +1196,11 @@ def title_figure(president_verbosity: pd.DataFrame, raw_negemo: pd.DataFrame, qu
     right.axhline(y=0, linestyle='--', color='black', linewidth=0.8, zorder=0)
     plt.tight_layout()
 
-    saveFigure(fig, folder.joinpath('Fig0.pdf'))
+    # saveFigure(fig, folder.joinpath('Fig0.pdf'))
+    # left_extend = left.get_window_extent().transformed(fig.dpi_scale_trans.inverted()).expanded(1.1, 1.1)
+    # saveFigure(fig, folder.joinpath('Title_figure_left.pdf'), bbox_inches=left_extend)
+    # right_extend = right.get_window_extent().transformed(fig.dpi_scale_trans.inverted()).expanded(1.1, 1.2)
+    # saveFigure(fig, folder.joinpath('Title_figure_right.pdf'), bbox_inches=right_extend)
     plt.close()
 
 
@@ -1336,6 +1343,7 @@ def main():
         'AttributesAggregation_RDD': attribute_plots,
         'AttributesAggregationSpeakerLevel_RDD': attribute_plots,
         'RDD_time_variation': RDD_kink_performance,
+        'RDD_time_variation_YouGov': RDD_kink_performance,
         'PartyAggregationWithoutTrump': basic_model_plots,
         'PartyAggregationWithoutTrump_RDD_democrats': basic_model_plots,
         'PartyAggregationWithoutTrump_RDD_republicans': basic_model_plots

@@ -415,13 +415,14 @@ def __try_float(s: str) -> Union[None, float]:
         return None
 
 
-def RDD_statsmodels(data: pd.DataFrame, t: str = 'time_delta') -> Dict[str, Any]:
+def RDD_statsmodels(data: pd.DataFrame, t: str = 'time_delta', kink: datetime = KINK) -> Dict[str, Any]:
     """
     A Regression Discontinuity Design implemented using statsmodels.
     Parameters
     ----------
     data: Data Frame containing the data to be fitted
     t: The column name of the time column in data.
+    kink: Where to split
     Returns
     -------
     A dictionary of RDD parameters for fitted RDD on all features. Can be used by the RDD class.
@@ -433,8 +434,8 @@ def RDD_statsmodels(data: pd.DataFrame, t: str = 'time_delta') -> Dict[str, Any]
     for feature in language_features:
         tmp = data.copy(deep=True)  # Don't alter input data
         tmp['date'] = pd.to_datetime(tmp['date'])  # Make sure date formatting is uniform
-        tmp['threshold'] = tmp['date'].apply(lambda dt: int(dt >= KINK))
-        delta_at_kink = tmp.loc[tmp.date == KINK][t].values[0]
+        tmp['threshold'] = tmp['date'].apply(lambda dt: int(dt >= kink))
+        delta_at_kink = tmp.loc[tmp.date == kink][t].values[0]
         tmp[t] = tmp[t] - delta_at_kink
 
         # Will automatically fit on all of the speaker attributes as well if they are given.
