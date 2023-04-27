@@ -30,10 +30,16 @@ parser.add_argument('--individuals', help='If provided, will get aggregates for 
 parser.add_argument('--exclude_top_n', help='If given, will perform an aggregation for each of the top n speakers'
                                             'excluding that speaker from the data. This enables to analyse the influence'
                                             'of the indivdual on the score', type=int, required=False)
+parser.add_argument('--exclude_by_qid', help="If given, will perform ablation analysis for each of the QIDs listed - "
+                                             "the argument should be a filepath to a csv file with a column qid and a"
+                                             "column num.", type=str, required=False)
 parser.add_argument('--start_top_n_at', help='Skip first N top speakers for extraction', type=int, default=0)
 parser.add_argument('--extract_top_n', help='Same as "individuals" argument, but takes the n most verbose individuals'
                                             'instead of specifying every one.', type=int)
 parser.add_argument('--top_n_file', help='Required for exclude_top_n: CSV file including rank and qid.')
+parser.add_argument('--selected_sources', help='If provided, will only use the sources listed in the file for one'
+                                               'aggregation. Should be a csv file with columns Rank,Outlet,Website',
+                    type=str, required=False)
 parser.add_argument('--standardize', default=True, type=bool)
 parser.add_argument('--skip_basics', default=False, type=bool)
 
@@ -367,6 +373,14 @@ def main():
     if ((args.exclude_top_n is not None) or (args.extract_top_n is not None)) and (args.top_n_file is None):
         raise argparse.ArgumentError("If exclude_top_n / extract_top_n is given, top_n_file must be given, too.")
 
+    if args.exclude_by_qid is not None and args.exclude_top_n is None:
+        raise argparse.ArgumentError("If exclude_by_qid is given, exclude_top_n must be given, too.")
+
+    if args.exclude_by_qid is not None:
+        exclude_by_qid = set(pd.read_csv(args.exclude_by_qid, index_col='num').qid)
+    else:
+        exclude_by_qid = set()
+
     base = Path(args.save)
     base.mkdir(exist_ok=True)
 
@@ -418,6 +432,17 @@ def main():
         agg = getScoresByVerbosity(df)
         save(_df_postprocessing(agg, features, MEAN, STD), 'VerbosityAggregation')
 
+    if args.selected_sources is not None:
+        selected_sources = pd.read_csv(args.selected_sources, index_col='Rank').Website.tolist()
+        cred = df \
+            .select(f.col('quoteID').alias('news_quote_ID'),
+                    f.explode('domains').alias('domain')) \
+            .filter(f.col('domain').isin(selected_sources)) \
+            .dropDuplicates(['news_quote_ID'])
+        credible_news = df.join(cred, on=cred.news_quote_ID == df.quoteID, how='inner').drop('domain', 'news_quote_ID')
+        agg = getScoresByGroups(credible_news, [])
+        save(_df_postprocessing(agg, features, MEAN, STD), 'YouGov_sources')
+
     spark.sparkContext.setLogLevel('WARN')
     individuals = [] if args.individuals is None else args.individuals
     if args.extract_top_n is not None:
@@ -432,16 +457,23 @@ def main():
         save(_df_postprocessing(agg, features, MEAN, STD), 'Individuals/{}'.format(qid))
 
     if args.exclude_top_n is not None:
+        # This part runs quite long: We aggregate over basically everything for every excluded speaker
         base.joinpath('Without').mkdir(exist_ok=True)
         rank_file = pd.read_csv(args.top_n_file)
         for i in range(args.exclude_top_n):
             rank = i + 1
             try:
                 qid = rank_file['QID'][rank_file['Rank'] == rank].values[0]
+                exclude_by_qid.discard(qid)
             except IndexError:
                 print('Rank {} is not available in the given speaker file.'.format(rank))
                 continue  # Might be okay, e.g. if the given rank is very large, it can just serve as an "include all"
             print('Collecting for quotations for all but rank {}'.format(rank))
+            tmp = df.filter(f.col('QID') != qid)
+            agg = getScoresByGroups(tmp, [])
+            save(_df_postprocessing(agg, features, MEAN, STD), 'Without/{}'.format(qid))
+        for qid in exclude_by_qid:
+            print('Collecting for quotations for all but for speaker with QID {}'.format(qid))
             tmp = df.filter(f.col('QID') != qid)
             agg = getScoresByGroups(tmp, [])
             save(_df_postprocessing(agg, features, MEAN, STD), 'Without/{}'.format(qid))

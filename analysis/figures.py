@@ -1333,6 +1333,7 @@ def main():
     NAME_2_FUNCTION = {
         'verbosity': verbosity_plots,
         'parties': party_plots,
+        'yougov_outlets': basic_model_plots,
         'Individuals': individuals,
         'Without': ablation_plots,
         'QuotationAggregation_RDD': basic_model_plots,
