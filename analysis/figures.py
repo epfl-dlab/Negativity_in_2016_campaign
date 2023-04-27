@@ -913,7 +913,7 @@ def RDD_kink_performance(data_path: Path, base: Path):
         timeLinePlot(
             x=dates,
             y=[data[dt][feature]['r2_adjust'] for dt in dates],
-            snsargs=dict(label=NAMES[feature], **rdd_style[feature]),
+            snsargs=dict(label=NAMES[feature], **{key: val for key, val in rdd_style[feature].items() if key !='label'}),
             ax=ax,
             includeElections=False
         )
@@ -1333,7 +1333,7 @@ def main():
     NAME_2_FUNCTION = {
         'verbosity': verbosity_plots,
         'parties': party_plots,
-        'yougov_outlets': basic_model_plots,
+        'YouGov_sources_RDD': basic_model_plots,
         'Individuals': individuals,
         'Without': ablation_plots,
         'QuotationAggregation_RDD': basic_model_plots,
@@ -1358,6 +1358,9 @@ def main():
     }
     for path in data.iterdir():
         if path.name.endswith('tex'):
+            continue
+
+        if not path.name.startswith('YouGov') or path.name.startswith('QuotationAggregation'):
             continue
 
         base_name = path.name.split('.')[0]
