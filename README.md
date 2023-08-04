@@ -1,16 +1,21 @@
 # United States Politicians' Tone Became More Negative with 2016 Primary Campaigns
 
-There is a widespread belief that the tone of US political language has become more negative recently, in particular when Donald Trump entered politics.
-At the same time, there is disagreement as to whether Trump changed or merely continued previous trends.
-To date, data-driven evidence regarding these questions is scarce, partly due to the difficulty of obtaining a comprehensive, longitudinal record of politicians' utterances.
-Here we apply psycholinguistic tools to a novel, comprehensive corpus of 24 million quotes from online news attributed to 18,627 US politicians in order to analyze how the tone of US politicians' language evolved between 2008 and 2020.
-We show that, whereas the frequency of negative emotion words had decreased continuously during Obama's tenure, it suddenly and lastingly increased with the 2016 primary campaigns, by 1.6 pre-campaign standard deviations, or 8% of the pre-campaign mean, in a pattern that emerges across parties.
-The effect size drops by 40% when omitting Trump's quotes, and by 50% when averaging over speakers rather than quotes, implying that prominent speakers, and Trump in particular, have disproportionately, though not exclusively, contributed to the rise in negative language.
-This work provides the first large-scale data-driven evidence of a drastic shift toward a more negative political tone following Trump's campaign start as a catalyst, with important implications for the debate about the state of US politics.
+This repository contains the code and aggregated data for the following publication, available online at [https://doi.org/10.1038/s41598-023-36839-1](https://doi.org/10.1038/s41598-023-36839-1):
 
-# Code Repository
+```
+@article{kuelz2023united,
+  author={Jonathan Külz, Andreas Spitz, Ahmad Abu-Akel, Stephan Günnemann, and Robert West},
+  title={United States Politicians' Tone Became More Negative with 2016 Primary Campaigns},
+  booktitle={Scientific Reports},
+  volume={13},
+  pages={10495},
+  year={2023}
+}
+```
 
-This repository contains the code and aggregated data for the publication "United States Politicians' Tone Became More Negative with 2016 Primary Campaigns".
+# Abstract
+
+There is a widespread belief that the tone of political debate in the US has become more negative recently, in particular when Donald Trump entered politics. At the same time, there is disagreement as to whether Trump changed or merely continued previous trends. To date, data-driven evidence regarding these questions is scarce, partly due to the difficulty of obtaining a comprehensive, longitudinal record of politicians’ utterances. Here we apply psycholinguistic tools to a novel, comprehensive corpus of 24 million quotes from online news attributed to 18,627 US politicians in order to analyze how the tone of US politicians’ language as reported in online media evolved between 2008 and 2020. We show that, whereas the frequency of negative emotion words had decreased continuously during Obama’s tenure, it suddenly and lastingly increased with the 2016 primary campaigns, by 1.6 pre-campaign standard deviations, or 8% of the pre-campaign mean, in a pattern that emerges across parties. The effect size drops by 40% when omitting Trump’s quotes, and by 50% when averaging over speakers rather than quotes, implying that prominent speakers, and Trump in particular, have disproportionately, though not exclusively, contributed to the rise in negative language. This work provides the first large-scale data-driven evidence of a drastic shift toward a more negative political tone following Trump’s campaign start as a catalyst. The findings have important implications for the debate about the state of US politics.
 
 
 # How to Start
